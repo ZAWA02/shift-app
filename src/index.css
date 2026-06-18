@@ -1,0 +1,63 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F5F0E8;
+  --surface: #FDFAF5;
+  --surface2: #EDE8DE;
+  --border: rgba(101,79,54,0.12);
+  --border-strong: rgba(101,79,54,0.25);
+  --text: #2C1A0E;
+  --text2: #6B4F35;
+  --text3: #A08060;
+  --accent: #7B5E3A;
+  --accent-light: #F0E8DC;
+  --accent-text: #5C4020;
+  --green: #4A7C59;
+  --green-light: #EAF3EC;
+  --green-text: #2D5C3A;
+  --amber: #C17F3A;
+  --amber-light: #FDF3E3;
+  --amber-text: #7A4E10;
+  --red: #C0392B;
+  --red-light: #FDECEA;
+  --red-text: #7B2318;
+  --wood-gradient: linear-gradient(135deg, #8B6340 0%, #6B4A2A 40%, #7D5535 70%, #5C3D1E 100%);
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --shadow: 0 2px 8px rgba(101,79,54,0.10);
+  --shadow-md: 0 6px 20px rgba(101,79,54,0.14);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    repeating-linear-gradient(88deg, transparent, transparent 2px, rgba(101,79,54,0.025) 2px, rgba(101,79,54,0.025) 4px),
+    repeating-linear-gradient(92deg, transparent, transparent 8px, rgba(101,79,54,0.015) 8px, rgba(101,79,54,0.015) 10px);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* スマホ向け最適化 */
+@media (max-width: 640px) {
+  :root { font-size: 15px; }
+  /* タップしやすいボタンサイズ */
+  button { min-height: 44px; }
+}
+
+/* スクロールバー */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+/* iPhoneノッチ対応 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  main { padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important; }
+  header { padding-top: env(safe-area-inset-top); }
+}

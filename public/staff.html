@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>シフト管理 - スタッフ</title>
+  <link rel="manifest" href="/manifest-staff.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="シフト(スタッフ)" />
+  <link rel="apple-touch-icon" href="/icon-staff.png" />
+  <meta name="theme-color" content="#3A6B4A" />
+</head>
+<body style="margin:0;background:#3A6B4A;">
+  <script>
+    // ハッシュルーターでスタッフページに移動
+    if (!window.location.hash || window.location.hash === '#/') {
+      window.location.replace('/#/staff')
+    } else {
+      window.location.replace('/' + window.location.hash)
+    }
+  </script>
+</body>
+</html>
