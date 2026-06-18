@@ -113,7 +113,7 @@ export default function CustomerHome() {
       </div>
 
       {/* カレンダー */}
-      <Card style={{ marginBottom: 16, padding: '1rem' }}>
+      <Card style={{ marginBottom: 16, padding: '1rem 0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <Btn size="sm" onClick={() => changeMonth(-1)}>‹ 前月</Btn>
           <span style={{ fontSize: 16, fontWeight: 700 }}>{calYear}年{calMonth+1}月</span>
@@ -121,7 +121,7 @@ export default function CustomerHome() {
         </div>
 
         {/* 曜日ヘッダー */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 3 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 3, width: '100%' }}>
           {DAY_NAMES.map((d, i) => (
             <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, padding: '3px 0',
               color: i===0?'var(--red)':i===6?'var(--accent)':'var(--text3)' }}>{d}</div>
@@ -129,7 +129,7 @@ export default function CustomerHome() {
         </div>
 
         {/* 日付グリッド */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, width: '100%' }}>
           {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: days }, (_, i) => {
             const d = i + 1
