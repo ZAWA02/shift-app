@@ -6,6 +6,48 @@ import { useNavigate } from 'react-router-dom'
 
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
 
+function nthWeekday(year, month, nth, weekday) {
+  let count = 0
+  for (let d = 1; d <= 31; d++) {
+    const date = new Date(year, month, d)
+    if (date.getMonth() !== month) break
+    if (date.getDay() === weekday) { count++; if (count === nth) return d }
+  }
+  return null
+}
+const shubun = y => Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4))
+const shunbun = y => Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4))
+
+function isHoliday(year, month, day) {
+  const fixed = [[0,1],[1,11],[1,23],[3,29],[4,3],[4,4],[4,5],[7,11],[10,3],[10,23]]
+  if (fixed.some(([m,d]) => m===month && d===day)) return true
+  if (month===2 && day===shunbun(year)) return true
+  if (month===8 && day===shubun(year)) return true
+  if (month===6 && day===nthWeekday(year,6,3,1)) return true
+  if (month===8 && day===nthWeekday(year,8,3,1)) return true
+  if (month===9 && day===nthWeekday(year,9,2,1)) return true
+  // 振替休日（月曜かつ前日が祝日）
+  if (new Date(year,month,day).getDay()===1) {
+    const pd=day-1, pm=month, py=year
+    if (isHolidayFixed(py,pm,pd)) return true
+  }
+  return false
+}
+function isHolidayFixed(y,m,d) {
+  const fixed=[[0,1],[1,11],[1,23],[3,29],[4,3],[4,4],[4,5],[7,11],[10,3],[10,23]]
+  if (fixed.some(([fm,fd])=>fm===m&&fd===d)) return true
+  if (m===2&&d===shunbun(y)) return true
+  if (m===8&&d===shubun(y)) return true
+  if (m===6&&d===nthWeekday(y,6,3,1)) return true
+  if (m===8&&d===nthWeekday(y,8,3,1)) return true
+  if (m===9&&d===nthWeekday(y,9,2,1)) return true
+  return false
+}
+function isRestDay(year, month, day) {
+  const dw = getDay(new Date(year, month, day))
+  return dw === 0 || dw === 6 || isHoliday(year, month, day)
+}
+
 export default function CustomerHome() {
   const { settings, bookings, cancelBookingByToken, announcements } = useStore()
   const shopName = settings?.shopName || 'My Shop'
@@ -101,24 +143,35 @@ export default function CustomerHome() {
             const isFull = settings.enabledSlots.every(i =>
               bookings.filter(b => b.dateKey===dk && b.slotIdx===i).length >= settings.maxPerSlot
             )
+            const isRest = isRestDay(calYear, calMonth, d)
+            const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
 
             return (
-              <button key={d} onClick={() => setSelectedDate(isSel ? null : d)} style={{
+              <button key={d} onClick={() => { if(!isPast && !isRest) setSelectedDate(isSel ? null : d) }} style={{
                 aspectRatio: '1', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 borderRadius: 'var(--radius-sm)', border: isSel ? '2px solid var(--accent)' : isToday ? '2px solid var(--text)' : '1px solid var(--border)',
-                background: isSel ? 'var(--accent)' : isFull && !isPast ? '#FEF2F2' : hasBook && !isPast ? 'var(--accent-light)' : 'var(--surface)',
-                color: isSel ? '#fff' : isPast ? 'var(--text3)' : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                background: isSel ? 'var(--accent)' : isRest ? 'var(--surface2)' : isFull && !isPast ? '#FEF2F2' : hasBook && !isPast ? 'var(--accent-light)' : 'var(--surface)',
+                color: isSel ? '#fff' : isPast||isRest ? 'var(--text3)' : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
                 opacity: isPast ? 0.35 : 1,
-                cursor: isPast ? 'default' : 'pointer',
+                cursor: isPast || isRest ? 'default' : 'pointer',
                 fontFamily: 'inherit', position: 'relative',
               }}>
-                <span style={{ fontSize: 13, fontWeight: isToday||isSel ? 700 : 400 }}>{d}</span>
-                {hasBook && !isPast && !isSel && (
-                  <span style={{ fontSize: 9, fontWeight: 700,
-                    color: isFull ? 'var(--red-text)' : 'var(--accent-text)' }}>
-                    {isFull ? '満' : `${dayBookings.length}`}
-                  </span>
+                {isRest && !isPast ? (
+                  <>
+                    <span style={{ fontSize:11, color:restColor, lineHeight:1 }}>{d}</span>
+                    <span style={{ fontSize:9, color:restColor, fontWeight:700, lineHeight:1, marginTop:1 }}>休</span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 13, fontWeight: isToday||isSel ? 700 : 400 }}>{d}</span>
+                    {hasBook && !isPast && !isSel && (
+                      <span style={{ fontSize: 9, fontWeight: 700,
+                        color: isFull ? 'var(--red-text)' : 'var(--accent-text)' }}>
+                        {isFull ? '満' : `${dayBookings.length}`}
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             )
