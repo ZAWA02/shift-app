@@ -6,6 +6,91 @@ import { useNavigate, useLocation } from 'react-router-dom'
 
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
 
+// 祝日判定ユーティリティ
+// n番目の曜日（0=日〜6=土）を返す
+function nthWeekday(year, month, nth, weekday) {
+  let count = 0
+  for (let d = 1; d <= 31; d++) {
+    const date = new Date(year, month, d)
+    if (date.getMonth() !== month) break
+    if (date.getDay() === weekday) {
+      count++
+      if (count === nth) return d
+    }
+  }
+  return null
+}
+
+// 秋分の日（近似計算）
+function shubun(year) {
+  return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4))
+}
+
+// 春分の日（近似計算）
+function shunbun(year) {
+  return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4))
+}
+
+function isHoliday(year, month, day) {
+  // month は 0始まり
+  const fixed = [
+    [0, 1],   // 元日
+    [1, 11],  // 建国記念日
+    [1, 23],  // 天皇誕生日
+    [4, 3],   // 憲法記念日
+    [4, 4],   // みどりの日
+    [4, 5],   // こどもの日
+    [7, 11],  // 山の日
+    [10, 3],  // 文化の日
+    [10, 23], // 勤労感謝の日
+  ]
+  if (fixed.some(([m, d]) => m === month && d === day)) return true
+
+  // 昭和の日 (4/29)
+  if (month === 3 && day === 29) return true
+
+  // 春分の日
+  if (month === 2 && day === shunbun(year)) return true
+
+  // 秋分の日
+  if (month === 8 && day === shubun(year)) return true
+
+  // 海の日（7月第3月曜日）
+  if (month === 6 && day === nthWeekday(year, 6, 3, 1)) return true
+
+  // 敬老の日（9月第3月曜日）
+  if (month === 8 && day === nthWeekday(year, 8, 3, 1)) return true
+
+  // スポーツの日（10月第2月曜日）
+  if (month === 9 && day === nthWeekday(year, 9, 2, 1)) return true
+
+  // 振替休日（日曜が祝日 → 翌月曜）
+  const prevDate = new Date(year, month, day - 1)
+  if (new Date(year, month, day).getDay() === 1) { // 月曜
+    const pd = prevDate.getDate(), pm = prevDate.getMonth(), py = prevDate.getFullYear()
+    if (isHolidayFixed(py, pm, pd)) return true
+  }
+
+  return false
+}
+
+// 振替判定用（再帰しない固定祝日チェック）
+function isHolidayFixed(year, month, day) {
+  const fixed = [[0,1],[1,11],[1,23],[3,29],[4,3],[4,4],[4,5],[7,11],[10,3],[10,23]]
+  if (fixed.some(([m,d]) => m===month && d===day)) return true
+  if (month===2 && day===shunbun(year)) return true
+  if (month===8 && day===shubun(year)) return true
+  if (month===6 && day===nthWeekday(year,6,3,1)) return true
+  if (month===8 && day===nthWeekday(year,8,3,1)) return true
+  if (month===9 && day===nthWeekday(year,9,2,1)) return true
+  return false
+}
+
+function isRestDay(year, month, day) {
+  const dw = getDay(new Date(year, month, day))
+  return dw === 0 || dw === 6 || isHoliday(year, month, day)
+}
+
 export default function BookPage() {
   const { settings, addBooking, getBookingsForSlot, bookings } = useStore()
   const navigate = useNavigate()
@@ -96,6 +181,8 @@ export default function BookPage() {
               const totalBookings = bookings.filter(b => b.dateKey === dk).length
               const hasAnyBook = totalBookings > 0
               const isToday = confirmYear===now.getFullYear() && confirmMonth===now.getMonth() && d===now.getDate()
+              const isRest = isRestDay(confirmYear, confirmMonth, d)
+              const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
 
               return (
                 <div key={d} style={{
@@ -103,16 +190,20 @@ export default function BookPage() {
                   alignItems:'center', justifyContent:'center',
                   borderRadius:'var(--radius-sm)',
                   border: isMyBooking ? '2px solid var(--green)' : isToday ? '2px solid var(--text)' : '1px solid var(--border)',
-                  background: isMyBooking ? '#DCFCE7' : hasAnyBook ? 'var(--accent-light)' : 'var(--surface)',
+                  background: isMyBooking ? '#DCFCE7' : isRest ? 'var(--surface2)' : hasAnyBook ? 'var(--accent-light)' : 'var(--surface)',
                 }}>
-                  <span style={{
-                    fontSize: 12, fontWeight: isMyBooking ? 700 : 400,
-                    color: isMyBooking ? 'var(--green-text)' : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                  }}>
-                    {isMyBooking ? '★' : d}
-                  </span>
-                  {hasAnyBook && !isMyBooking && (
-                    <span style={{ fontSize: 8, color: 'var(--accent-text)', fontWeight: 700 }}>{totalBookings}</span>
+                  {isMyBooking ? (
+                    <span style={{ fontSize:12, fontWeight:700, color:'var(--green-text)' }}>★</span>
+                  ) : isRest ? (
+                    <>
+                      <span style={{ fontSize:10, color:restColor, lineHeight:1 }}>{d}</span>
+                      <span style={{ fontSize:8, color:restColor, fontWeight:700, lineHeight:1, marginTop:1 }}>休</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize:12, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)' }}>{d}</span>
+                      {hasAnyBook && <span style={{ fontSize:8, color:'var(--accent-text)', fontWeight:700 }}>{totalBookings}</span>}
+                    </>
                   )}
                 </div>
               )
@@ -169,21 +260,32 @@ export default function BookPage() {
                 const d = i+1
                 const dw = getDay(new Date(calYear, calMonth, d))
                 const isPast = new Date(calYear, calMonth, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                const isRest = isRestDay(calYear, calMonth, d)
+                const isDisabled = isPast || isRest
                 const isSel = selDate === d
                 const dk = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
                 const hasBook = useStore.getState().bookings.some(b => b.dateKey === dk)
                 return (
-                  <button key={d} onClick={() => { if(!isPast){ setSelDate(d); setSelSlot(null) } }} style={{
+                  <button key={d} onClick={() => { if(!isDisabled){ setSelDate(d); setSelSlot(null) } }} style={{
                     aspectRatio:'1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
                     borderRadius:'var(--radius-sm)', fontFamily:'inherit',
                     border: isSel?'2px solid var(--accent)':'1px solid var(--border)',
-                    background: isSel?'var(--accent)':'var(--surface)',
-                    color: isSel?'#fff':isPast?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                    opacity: isPast ? 0.3 : 1, cursor: isPast ? 'default' : 'pointer',
+                    background: isSel?'var(--accent)':isRest?'var(--surface2)':'var(--surface)',
+                    color: isSel?'#fff':isDisabled?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                    opacity: isPast ? 0.3 : 1, cursor: isDisabled ? 'default' : 'pointer',
                     position:'relative', fontSize:14, fontWeight: isSel ? 700 : 400,
                   }}>
-                    {d}
-                    {hasBook && !isSel && <span style={{ position:'absolute', bottom:2, width:4, height:4, borderRadius:'50%', background:'var(--accent)' }} />}
+                    {isRest && !isPast ? (
+                      <>
+                        <span style={{ fontSize:10, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)', lineHeight:1 }}>{d}</span>
+                        <span style={{ fontSize:9, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)', fontWeight:700, lineHeight:1, marginTop:1 }}>休</span>
+                      </>
+                    ) : (
+                      <>
+                        {d}
+                        {hasBook && !isSel && <span style={{ position:'absolute', bottom:2, width:4, height:4, borderRadius:'50%', background:'var(--accent)' }} />}
+                      </>
+                    )}
                   </button>
                 )
               })}
