@@ -14,6 +14,7 @@ export default function WagePage() {
   const [shiftHoursInput, setShiftHoursInput] = useState(settings.shiftHours ?? 6)
   const [hoursOverride, setHoursOverride] = useState({}) // staffId → 手動入力時間
   const [editingHours, setEditingHours] = useState({}) // staffId → 編集中かどうか
+  const [expandedStaff, setExpandedStaff] = useState({}) // staffId → 詳細展開中かどうか
 
   // パスワード確認
   const [pwInput, setPwInput] = useState('')
@@ -198,90 +199,127 @@ export default function WagePage() {
 
       {/* スタッフ別明細 */}
       <Card style={{ marginBottom:16 }}>
-        <SectionTitle icon="💴" title="スタッフ別 給与明細" desc={`対象期間：${periodLabel}　⏱️ 時間の鉛筆アイコンで直接編集できます`} />
-        <div style={{ overflowX:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-            <thead>
-              <tr style={{ borderBottom:'2px solid var(--border)' }}>
-                {['名前','役割','時給','日数','労働時間','給与',''].map((h,i) => (
-                  <th key={i} style={{ padding:'8px 12px', textAlign:i<=1?'left':'right', color:'var(--text2)', fontSize:11, fontWeight:600 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((s,i) => (
-                <tr key={s.id} style={{ borderBottom:i<results.length-1?'1px solid var(--border)':'none', background:i%2===0?'transparent':'rgba(0,0,0,0.015)' }}>
-                  <td style={{ padding:'10px 12px' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <Avatar name={s.name} size={26} colorIndex={i} />
-                      <span style={{ fontWeight:600 }}>{s.name}</span>
+        <SectionTitle icon="💴" title="スタッフ別 給与明細" desc={`対象期間：${periodLabel}`} />
+
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {results.map((s, i) => {
+            const isExpanded = !!expandedStaff[s.id]
+            const staffReports = monthReports.filter(r => r.staffId === s.id).sort((a,b) => a.date.localeCompare(b.date))
+            return (
+              <div key={s.id} style={{ border:'1.5px solid var(--border)', borderRadius:'var(--radius)', overflow:'hidden' }}>
+
+                {/* スタッフ行ヘッダー */}
+                <button
+                  onClick={() => setExpandedStaff(prev => ({ ...prev, [s.id]: !prev[s.id] }))}
+                  style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px 14px', background: isExpanded ? 'var(--surface2)' : 'var(--surface)', border:'none', cursor:'pointer', fontFamily:'inherit', textAlign:'left' }}>
+                  <Avatar name={s.name} size={32} colorIndex={i} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:14, fontWeight:700 }}>{s.name}</span>
+                      <Badge color={s.role==='リーダー'?'blue':s.role==='フリーター'?'green':'gray'}>{s.role}</Badge>
+                      {s.isActual && !s.isOverride && <Badge color="green">報告済</Badge>}
+                      {s.isOverride && <Badge color="amber">手動</Badge>}
                     </div>
-                  </td>
-                  <td style={{ padding:'10px 12px' }}>
-                    <Badge color={s.role==='リーダー'?'blue':s.role==='フリーター'?'green':'gray'}>{s.role}</Badge>
-                  </td>
-                  <td style={{ padding:'10px 12px', textAlign:'right' }}>¥{s.hourlyWage.toLocaleString()}</td>
-                  <td style={{ padding:'10px 12px', textAlign:'right' }}>{s.shiftDays}日</td>
-                  <td style={{ padding:'6px 12px', textAlign:'right' }}>
+                    <div style={{ display:'flex', gap:12, marginTop:4, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:11, color:'var(--text3)' }}>時給 ¥{s.hourlyWage.toLocaleString()}</span>
+                      <span style={{ fontSize:11, color:'var(--text2)', fontWeight:600 }}>{s.shiftDays}日 · {s.hours}h</span>
+                      <span style={{ fontSize:12, fontWeight:700, color: s.wage>0?'var(--green-text)':'var(--text3)' }}>¥{s.wage.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  {/* 時間手動編集 */}
+                  <div onClick={e => e.stopPropagation()}>
                     {editingHours[s.id] ? (
-                      <div style={{ display:'flex', alignItems:'center', gap:4, justifyContent:'flex-end' }}>
-                        <input
-                          type="number" min="0" max="24" step="0.5"
-                          defaultValue={s.hours}
-                          id={`hours-${s.id}`}
-                          style={{ width:60, padding:'4px 8px', fontSize:13, borderRadius:'var(--radius-sm)', border:'2px solid var(--accent)', background:'var(--surface)', color:'var(--text)', fontFamily:'inherit', textAlign:'right' }}
-                          autoFocus
-                        />
-                        <span style={{ fontSize:12, color:'var(--text3)' }}>h</span>
+                      <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                        <input type="number" min="0" max="200" step="0.5" defaultValue={s.hours} id={`hours-${s.id}`}
+                          style={{ width:56, padding:'4px 6px', fontSize:12, borderRadius:'var(--radius-sm)', border:'2px solid var(--accent)', background:'var(--surface)', color:'var(--text)', fontFamily:'inherit', textAlign:'right' }} autoFocus />
+                        <span style={{ fontSize:11, color:'var(--text3)' }}>h</span>
                         <button onClick={() => {
-                          const val = document.getElementById(`hours-${s.id}`)?.value
-                          const h = parseFloat(val)
+                          const h = parseFloat(document.getElementById(`hours-${s.id}`)?.value)
                           if (!isNaN(h) && h >= 0) setHoursOverride(prev => ({ ...prev, [s.id]: h }))
                           setEditingHours(prev => ({ ...prev, [s.id]: false }))
-                        }} style={{ padding:'4px 8px', background:'var(--green)', color:'white', border:'none', borderRadius:'var(--radius-sm)', cursor:'pointer', fontSize:12, fontWeight:700 }}>✓</button>
+                        }} style={{ padding:'4px 8px', background:'var(--green)', color:'white', border:'none', borderRadius:'var(--radius-sm)', cursor:'pointer', fontSize:11, fontWeight:700 }}>✓</button>
                         <button onClick={() => setEditingHours(prev => ({ ...prev, [s.id]: false }))}
-                          style={{ padding:'4px 6px', background:'var(--surface2)', color:'var(--text3)', border:'none', borderRadius:'var(--radius-sm)', cursor:'pointer', fontSize:12 }}>✕</button>
+                          style={{ padding:'4px 6px', background:'var(--surface2)', color:'var(--text3)', border:'none', borderRadius:'var(--radius-sm)', cursor:'pointer', fontSize:11 }}>✕</button>
                       </div>
                     ) : (
-                      <div style={{ display:'flex', alignItems:'center', gap:6, justifyContent:'flex-end' }}>
-                        <span style={{ fontWeight:600 }}>{s.hours}</span>
-                        <span style={{ fontSize:11, color:s.isActual?'var(--green-text)':'var(--text3)' }}>
-                          {s.isOverride ? '📝' : s.isActual ? '実績' : '予定'}
-                        </span>
-                        <span style={{ fontSize:10, color:'var(--text3)' }}>h</span>
-                        <button onClick={() => setEditingHours(prev => ({ ...prev, [s.id]: true }))}
-                          title="時間を直接編集"
-                          style={{ padding:'2px 6px', background:'transparent', color:'var(--text3)', border:'1px solid var(--border)', borderRadius:4, cursor:'pointer', fontSize:11 }}>✏️</button>
-                      </div>
+                      <button onClick={() => setEditingHours(prev => ({ ...prev, [s.id]: true }))}
+                        style={{ padding:'4px 8px', background:'transparent', color:'var(--text3)', border:'1px solid var(--border)', borderRadius:4, cursor:'pointer', fontSize:11 }}>✏️ 時間編集</button>
                     )}
-                  </td>
-                  <td style={{ padding:'10px 12px', textAlign:'right' }}>
-                    <span style={{ fontWeight:700, fontSize:14, color:s.wage>0?'var(--green-text)':'var(--text3)' }}>
-                      ¥{s.wage.toLocaleString()}
-                    </span>
-                  </td>
-                  <td style={{ padding:'10px 4px', textAlign:'right' }}>
-                    {s.isActual && !s.isOverride && <Badge color="green">報告済</Badge>}
-                    {s.isOverride && <Badge color="amber">手動</Badge>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr style={{ borderTop:'2px solid var(--border)', background:'var(--surface2)' }}>
-                <td colSpan={4} style={{ padding:'10px 12px', fontWeight:700 }}>合計</td>
-                <td style={{ padding:'10px 12px', textAlign:'right', fontWeight:700 }}>{totalHours}h</td>
-                <td style={{ padding:'10px 12px', textAlign:'right', fontWeight:700, fontSize:15, color:'var(--green-text)' }}>¥{totalWage.toLocaleString()}</td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
+                  </div>
+                  <span style={{ fontSize:14, color:'var(--text3)', marginLeft:4 }}>{isExpanded ? '▲' : '▼'}</span>
+                </button>
+
+                {/* 展開：日別詳細 */}
+                {isExpanded && (
+                  <div style={{ borderTop:'1px solid var(--border)', background:'var(--bg)' }}>
+                    {staffReports.length === 0 ? (
+                      <div style={{ padding:'14px 16px', fontSize:12, color:'var(--text3)', textAlign:'center' }}>
+                        勤務報告がありません（シフトベースの予定時間で計算中）
+                      </div>
+                    ) : (
+                      <>
+                        {/* 日別テーブルヘッダー */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'6px 16px', borderBottom:'1px solid var(--border)', background:'var(--surface2)' }}>
+                          {['日付','時間','時給','金額',''].map((h,j) => (
+                            <div key={j} style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textAlign: j===0?'left':'right' }}>{h}</div>
+                          ))}
+                        </div>
+                        {staffReports.map((r, j) => {
+                          const [,rm,rd] = r.date.split('-')
+                          const dw = getDay(new Date(r.date))
+                          const amount = Math.round(s.hourlyWage * (parseFloat(r.hours)||0))
+                          const submittedAt = r.createdAt ? new Date(r.createdAt) : null
+                          return (
+                            <div key={r.id} style={{ borderBottom: j < staffReports.length-1 ? '1px solid var(--border)' : 'none' }}>
+                              <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'10px 16px', alignItems:'center', background: j%2===0?'transparent':'rgba(0,0,0,0.012)' }}>
+                                <div>
+                                  <div style={{ fontSize:13, fontWeight:600 }}>
+                                    {parseInt(rm)}月{parseInt(rd)}日
+                                    <span style={{ fontSize:11, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)', marginLeft:4 }}>({DAY_NAMES[dw]})</span>
+                                  </div>
+                                  {r.memo && <div style={{ fontSize:10, color:'var(--text3)', fontStyle:'italic' }}>「{r.memo}」</div>}
+                                  {submittedAt && <div style={{ fontSize:10, color:'var(--text3)' }}>提出 {submittedAt.getMonth()+1}/{submittedAt.getDate()} {String(submittedAt.getHours()).padStart(2,'0')}:{String(submittedAt.getMinutes()).padStart(2,'0')}</div>}
+                                </div>
+                                <div style={{ textAlign:'right', fontSize:13, fontWeight:700 }}>{r.hours}h</div>
+                                <div style={{ textAlign:'right', fontSize:12, color:'var(--text3)' }}>¥{s.hourlyWage.toLocaleString()}</div>
+                                <div style={{ textAlign:'right', fontSize:13, fontWeight:700, color:'var(--green-text)' }}>¥{amount.toLocaleString()}</div>
+                                <div style={{ textAlign:'right' }}>
+                                  <button onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}
+                                    style={{ fontSize:12, padding:'2px 6px', background:'var(--red-light)', color:'var(--red-text)', border:'none', borderRadius:4, cursor:'pointer' }}>削</button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {/* 小計 */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'8px 16px', borderTop:'2px solid var(--border)', background:'var(--surface2)' }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:'var(--text2)' }}>小計 ({staffReports.length}日)</div>
+                          <div style={{ textAlign:'right', fontSize:13, fontWeight:700 }}>{staffReports.reduce((a,r)=>a+(parseFloat(r.hours)||0),0)}h</div>
+                          <div />
+                          <div style={{ textAlign:'right', fontSize:14, fontWeight:700, color:'var(--green-text)' }}>¥{s.wage.toLocaleString()}</div>
+                          <div />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
+
+        {/* 合計行 */}
+        <div style={{ marginTop:12, padding:'12px 16px', background:'var(--surface2)', borderRadius:'var(--radius-sm)', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
+          <span style={{ fontSize:13, fontWeight:700 }}>月間合計</span>
+          <div style={{ display:'flex', gap:20 }}>
+            <span style={{ fontSize:13, fontWeight:700 }}>⏱️ {totalHours}h</span>
+            <span style={{ fontSize:15, fontWeight:700, color:'var(--green-text)' }}>💴 ¥{totalWage.toLocaleString()}</span>
+          </div>
+        </div>
+
         {Object.keys(hoursOverride).length > 0 && (
-          <div style={{ marginTop:10, display:'flex', justifyContent:'flex-end' }}>
-            <Btn size="sm" onClick={() => setHoursOverride({})} style={{ color:'var(--text3)' }}>
-              ↺ 手動編集をリセット
-            </Btn>
+          <div style={{ marginTop:8, display:'flex', justifyContent:'flex-end' }}>
+            <Btn size="sm" onClick={() => setHoursOverride({})} style={{ color:'var(--text3)' }}>↺ 手動編集をリセット</Btn>
           </div>
         )}
       </Card>
