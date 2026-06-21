@@ -160,24 +160,23 @@ export default function StaffHome() {
             const dayIdx = d - 1
             const dk = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
 
-            // シフト情報
-            const hasShift = selectedStaffId ? !!myShifts[dayIdx] : staff.some(s => (monthShifts[s.id]||{})[dayIdx])
-            const staffCount = !selectedStaffId ? staff.filter(s => (monthShifts[s.id]||{})[dayIdx]).length : 0
+            // その日に出勤するスタッフ一覧
+            const workingStaff = staff.filter(s => (monthShifts[s.id]||{})[dayIdx])
+            const hasShift = selectedStaffId ? !!myShifts[dayIdx] : workingStaff.length > 0
             const isNg = selectedStaffId ? (monthWishes[selectedStaffId]||{})[dayIdx] === 'ng' : false
-
-            // 予約情報
             const dayBookingCount = bookings.filter(b => b.dateKey === dk).length
             const hasBooking = dayBookingCount > 0
-
             const isToday = selYear===now.getFullYear() && selMonth===now.getMonth() && d===now.getDate()
             const isTapped = tappedDay === d
 
-            // 背景色の優先度：タップ > シフト > 予約のみ > NG > 通常
             let bg = 'var(--surface)'
             if (isTapped) bg = '#FDF2F8'
             else if (hasShift && selectedStaffId) bg = '#DCFCE7'
             else if (hasShift && !selectedStaffId) bg = '#E6F1FB'
             else if (isNg) bg = '#FEF2F2'
+
+            // 名前の頭文字（姓の1文字）
+            const initials = workingStaff.map(s => s.name.charAt(0))
 
             return (
               <button key={d}
@@ -187,41 +186,53 @@ export default function StaffHome() {
                   alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)',
                   border: isTapped ? '2px solid #EC4899' : isToday ? '2px solid var(--text)' : '1px solid var(--border)',
                   background: bg,
-                  cursor: 'pointer', fontFamily: 'inherit', padding: 0, position: 'relative',
+                  cursor: 'pointer', fontFamily: 'inherit', padding: '2px 1px', position: 'relative', gap: 1,
                 }}>
-                {/* メインラベル */}
+
+                {/* 日付数字 */}
                 <span style={{
-                  fontSize: 11, fontWeight: isToday||isTapped ? 700 : 400, lineHeight: 1,
-                  color: hasShift && selectedStaffId ? 'var(--green-text)'
-                    : hasShift ? 'var(--accent-text)'
+                  fontSize: 11, fontWeight: isToday||isTapped ? 800 : 500, lineHeight: 1,
+                  color: hasShift && selectedStaffId ? '#166534'
                     : isNg ? 'var(--red-text)'
                     : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
                 }}>
-                  {hasShift && selectedStaffId ? '◯' : d}
+                  {d}
                 </span>
 
-                {/* シフト人数（全体表示時）*/}
-                {!selectedStaffId && staffCount > 0 && (
-                  <span style={{ fontSize: 8, color: 'var(--accent-text)', fontWeight: 700, lineHeight: 1 }}>{staffCount}人</span>
+                {/* スタッフ頭文字（全体表示時）*/}
+                {!selectedStaffId && initials.length > 0 && (
+                  <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:1, maxWidth:'100%' }}>
+                    {initials.slice(0,3).map((ch, ci) => (
+                      <span key={ci} style={{
+                        fontSize: 8, fontWeight: 700, lineHeight: 1,
+                        background: '#2563EB', color: '#fff',
+                        borderRadius: 2, padding: '1px 2px',
+                      }}>{ch}</span>
+                    ))}
+                    {initials.length > 3 && (
+                      <span style={{ fontSize:7, color:'var(--accent-text)', fontWeight:700 }}>+{initials.length-3}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* 自分のシフト（スタッフ選択時）*/}
+                {selectedStaffId && hasShift && (
+                  <span style={{ fontSize: 9, color: '#166534', fontWeight: 700, lineHeight: 1 }}>出勤</span>
                 )}
 
                 {/* NG */}
                 {selectedStaffId && isNg && !hasShift && (
-                  <span style={{ fontSize: 8, color: 'var(--red-text)', lineHeight: 1 }}>×</span>
+                  <span style={{ fontSize: 9, color: 'var(--red-text)', lineHeight: 1, fontWeight:700 }}>NG</span>
                 )}
 
-                {/* 予約件数バッジ（ピンク） */}
+                {/* 予約件数バッジ */}
                 {hasBooking && (
                   <span style={{
-                    position: 'absolute', bottom: 2, right: 2,
+                    position: 'absolute', top: 1, right: 2,
                     fontSize: 7, fontWeight: 700, lineHeight: 1,
-                    color: '#EC4899',
-                    background: 'rgba(236,72,153,0.12)',
-                    borderRadius: 3,
-                    padding: '1px 2px',
-                  }}>
-                    予{dayBookingCount}
-                  </span>
+                    color: '#EC4899', background: 'rgba(236,72,153,0.15)',
+                    borderRadius: 3, padding: '1px 2px',
+                  }}>予{dayBookingCount}</span>
                 )}
               </button>
             )
@@ -229,37 +240,64 @@ export default function StaffHome() {
         </div>
 
         {/* 凡例 */}
-        <div style={{ display:'flex', gap:10, marginTop:10, fontSize:10, color:'var(--text3)', flexWrap:'wrap' }}>
-          {selectedStaffId && <span><span style={{ color:'var(--green-text)', fontWeight:700 }}>◯</span> 出勤確定</span>}
-          {!selectedStaffId && <span><span style={{ display:'inline-block', width:8, height:8, borderRadius:2, background:'#E6F1FB', border:'1px solid #93C5FD', verticalAlign:'middle', marginRight:2 }}></span>出勤あり</span>}
-          <span><span style={{ color:'#EC4899', fontWeight:700 }}>予N</span> お客さん予約数</span>
-          {selectedStaffId && <span><span style={{ color:'var(--red-text)', fontWeight:700 }}>×</span> NG</span>}
-          <span style={{ color:'var(--text3)' }}>← 日付タップで予約詳細</span>
+        <div style={{ display:'flex', gap:10, marginTop:10, fontSize:10, color:'var(--text3)', flexWrap:'wrap', alignItems:'center' }}>
+          <span><span style={{ display:'inline-block', background:'#2563EB', color:'#fff', fontSize:9, fontWeight:700, borderRadius:2, padding:'1px 4px' }}>金</span> 出勤スタッフ頭文字</span>
+          <span><span style={{ color:'#EC4899', fontWeight:700 }}>予N</span> 予約数</span>
+          <span>日付タップ → 詳細</span>
         </div>
 
-        {/* タップした日の予約詳細 */}
-        {tappedDay && (
-          <div style={{ marginTop:12, padding:'10px 12px', background:'#FDF2F8', borderRadius:'var(--radius-sm)', border:'1px solid rgba(236,72,153,0.25)' }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#9D174D', marginBottom:6 }}>
-              {selMonth+1}月{tappedDay}日（{DAY_NAMES[getDay(new Date(selYear, selMonth, tappedDay))]}）の予約
-            </div>
-            {tappedBookings.length === 0 ? (
-              <div style={{ fontSize:12, color:'var(--text3)' }}>予約はありません</div>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {tappedBookings.map((b, i) => (
-                  <div key={b.id||i} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', background:'white', borderRadius:'var(--radius-sm)', border:'1px solid rgba(236,72,153,0.2)' }}>
-                    <div style={{ fontSize:18 }}>👤</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:12, fontWeight:700 }}>{b.name} 様</div>
-                      <div style={{ fontSize:11, color:'var(--text3)' }}>{b.slot}</div>
-                    </div>
-                  </div>
-                ))}
+        {/* タップした日の詳細 */}
+        {tappedDay && (() => {
+          const tDayIdx = tappedDay - 1
+          const tDw = getDay(new Date(selYear, selMonth, tappedDay))
+          const tWorkingStaff = staff.filter(s => (monthShifts[s.id]||{})[tDayIdx])
+          const tLabel = `${selMonth+1}月${tappedDay}日（${DAY_NAMES[tDw]}）`
+          return (
+            <div style={{ marginTop:12, borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', overflow:'hidden' }}>
+              <div style={{ padding:'8px 12px', background:'var(--surface2)', fontSize:12, fontWeight:700, color:'var(--text2)' }}>
+                📅 {tLabel}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* 出勤スタッフ */}
+              <div style={{ padding:'8px 12px', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ fontSize:11, color:'var(--text3)', marginBottom:5, fontWeight:600 }}>👥 出勤スタッフ</div>
+                {tWorkingStaff.length === 0 ? (
+                  <div style={{ fontSize:12, color:'var(--text3)' }}>出勤予定なし</div>
+                ) : (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                    {tWorkingStaff.map(s => (
+                      <span key={s.id} style={{
+                        fontSize:12, fontWeight:700, padding:'3px 10px',
+                        background:'#DCFCE7', color:'#166534',
+                        borderRadius:999, border:'1px solid rgba(22,101,52,0.2)',
+                      }}>{s.name.split(' ')[0]}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 予約 */}
+              <div style={{ padding:'8px 12px' }}>
+                <div style={{ fontSize:11, color:'var(--text3)', marginBottom:5, fontWeight:600 }}>📋 お客さんの予約</div>
+                {tappedBookings.length === 0 ? (
+                  <div style={{ fontSize:12, color:'var(--text3)' }}>予約なし</div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                    {tappedBookings.map((b, i) => (
+                      <div key={b.id||i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', background:'var(--surface)', borderRadius:'var(--radius-sm)', border:'1px solid rgba(236,72,153,0.2)' }}>
+                        <span style={{ fontSize:13 }}>👤</span>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:700 }}>{b.name} 様</div>
+                          <div style={{ fontSize:11, color:'var(--text3)' }}>{b.slot}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* 出勤予定日リスト */}
         {selectedStaffId && myShiftDays.length > 0 && (
