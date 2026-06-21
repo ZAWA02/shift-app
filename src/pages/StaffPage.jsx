@@ -111,20 +111,20 @@ export default function StaffPage() {
         </div>
 
         {/* 送信後カレンダー */}
-        <Card style={{ marginBottom: 16 }}>
+        <Card style={{ marginBottom: 16, padding: '1rem 0.75rem' }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>📅 {displayMonth}のシフト予定</div>
           <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>
             管理者が確定したシフトが緑で表示されます
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4, width: '100%' }}>
             {DAY_NAMES.map((d, i) => (
               <div key={d} style={{ textAlign:'center', fontSize:11, fontWeight:700, padding:'4px 0',
                 color: i===0?'var(--red)':i===6?'var(--accent)':'var(--text3)' }}>{d}</div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, width: '100%' }}>
             {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
             {Array.from({ length: days }, (_, i) => {
               const d = i + 1
@@ -246,15 +246,15 @@ export default function StaffPage() {
         )}
       </Card>
 
-      <Card style={{ marginBottom: 16, opacity: selectedStaff ? 1 : 0.5, pointerEvents: selectedStaff ? 'auto' : 'none' }}>
+      <Card style={{ marginBottom: 16, opacity: selectedStaff ? 1 : 0.5, pointerEvents: selectedStaff ? 'auto' : 'none', padding: '1rem 0.75rem' }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>② 出勤できる日・できない日を選んでください</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4, width: '100%' }}>
           {DAY_NAMES.map((d, i) => (
             <div key={d} style={{ textAlign:'center', fontSize:11, fontWeight:700, padding:'4px 0',
               color: i===0?'var(--red)':i===6?'var(--accent)':'var(--text3)' }}>{d}</div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, width: '100%' }}>
           {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: days }, (_, i) => i+1).map(d => {
             const dw = getDay(new Date(selYear, selMonth, d))
