@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
 
 export default function StaffHome() {
-  const { staff, wishes, shifts, shiftMonth, addWorkReport, workReports, announcements, confirmedShifts } = useStore()
+  const { staff, wishes, shifts, shiftMonth, addWorkReport, workReports, announcements, confirmedShifts, bookings, settings } = useStore()
   const navigate = useNavigate()
   const now = new Date()
   const [selYear, setSelYear] = useState(shiftMonth.year)
@@ -250,6 +250,65 @@ export default function StaffHome() {
           )}
         </Card>
       )}
+
+      {/* お客さん予約状況 */}
+      {(() => {
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+        const mk2 = `${selYear}-${String(selMonth+1).padStart(2,'0')}`
+        const monthBookings = bookings.filter(b => (b.dateKey||'').startsWith(mk2))
+        const todayBookings = bookings.filter(b => b.dateKey === todayKey)
+        const upcomingBookings = bookings
+          .filter(b => b.dateKey && b.dateKey >= todayKey)
+          .sort((a,b) => a.dateKey.localeCompare(b.dateKey))
+          .slice(0, 5)
+        return (
+          <Card style={{ marginBottom: 16, borderLeft: '3px solid #EC4899' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🗓️ お客さんの予約状況</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
+              <div style={{ textAlign:'center', padding:'8px 4px', background:'var(--surface2)', borderRadius:'var(--radius-sm)' }}>
+                <div style={{ fontSize:9, color:'var(--text3)', marginBottom:3 }}>今日</div>
+                <div style={{ fontSize:18, fontWeight:700, color: todayBookings.length>0 ? '#EC4899' : 'var(--text3)' }}>{todayBookings.length}件</div>
+              </div>
+              <div style={{ textAlign:'center', padding:'8px 4px', background:'var(--surface2)', borderRadius:'var(--radius-sm)' }}>
+                <div style={{ fontSize:9, color:'var(--text3)', marginBottom:3 }}>{selMonth+1}月合計</div>
+                <div style={{ fontSize:18, fontWeight:700 }}>{monthBookings.length}件</div>
+              </div>
+              <div style={{ textAlign:'center', padding:'8px 4px', background:'var(--surface2)', borderRadius:'var(--radius-sm)' }}>
+                <div style={{ fontSize:9, color:'var(--text3)', marginBottom:3 }}>直近5件</div>
+                <div style={{ fontSize:18, fontWeight:700, color:'var(--accent-text)' }}>{upcomingBookings.length}件</div>
+              </div>
+            </div>
+            {upcomingBookings.length > 0 ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {upcomingBookings.map((b,i) => {
+                  const [y,m,d] = (b.dateKey||'').split('-')
+                  const dw = getDay(new Date(parseInt(y), parseInt(m)-1, parseInt(d)))
+                  const isToday = b.dateKey === todayKey
+                  return (
+                    <div key={b.id||i} style={{
+                      display:'flex', alignItems:'center', gap:10, padding:'8px 10px',
+                      background: isToday ? '#FDF2F8' : 'var(--surface2)',
+                      borderRadius:'var(--radius-sm)',
+                      border: isToday ? '1px solid rgba(236,72,153,0.3)' : '1px solid var(--border)',
+                    }}>
+                      <div style={{ fontSize:11, fontWeight:700, color: isToday?'#EC4899':'var(--text2)', minWidth:60 }}>
+                        {parseInt(m)}月{parseInt(d)}日({DAY_NAMES[dw]})
+                        {isToday && <span style={{ display:'block', fontSize:9, color:'#EC4899' }}>今日</span>}
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:600 }}>{b.name} 様</div>
+                        <div style={{ fontSize:11, color:'var(--text3)' }}>{b.slot}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign:'center', fontSize:12, color:'var(--text3)', padding:'8px 0' }}>直近の予約はありません</div>
+            )}
+          </Card>
+        )
+      })()}
 
       {/* アクションボタン */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

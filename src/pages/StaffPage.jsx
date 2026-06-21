@@ -144,7 +144,7 @@ export default function StaffPage() {
             来月分も入力 →
           </Btn>
         </div>
-        <Btn style={{ width:'100%', marginTop:10 }} onClick={() => navigate('/staff')}>
+        <Btn style={{ width:'100%', marginTop:10 }} onClick={() => { window.scrollTo(0,0); navigate('/staff', { replace: true }) }}>
           ← スタッフホームに戻る
         </Btn>
       </div>
@@ -155,7 +155,7 @@ export default function StaffPage() {
   return (
     <div style={{ maxWidth: 540, margin: '0 auto', padding: '1rem' }}>
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
-        <Btn size="sm" variant="ghost" onClick={() => navigate('/staff')}>←</Btn>
+        <Btn size="sm" variant="ghost" onClick={() => { window.scrollTo(0,0); navigate('/staff', { replace: true }) }}>←</Btn>
         <div>
           <div style={{ fontSize: 20, fontWeight: 700 }}>希望シフト入力</div>
           <div style={{ fontSize: 13, color: 'var(--text2)' }}>{displayMonth}分</div>

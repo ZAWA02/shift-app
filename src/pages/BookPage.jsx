@@ -218,7 +218,7 @@ export default function BookPage() {
 
         <div style={{ display:'flex', gap:10 }}>
           <Btn style={{ flex:1 }} onClick={reset}>別の日を予約する</Btn>
-          <Btn variant="primary" style={{ flex:1 }} onClick={() => navigate('/customer')}>
+          <Btn variant="primary" style={{ flex:1 }} onClick={() => { window.scrollTo(0,0); navigate('/customer', { replace: true }) }}>
             ホームに戻る
           </Btn>
         </div>

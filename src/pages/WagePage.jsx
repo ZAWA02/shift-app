@@ -34,9 +34,12 @@ export default function WagePage() {
   const prevYear = month === 0 ? year - 1 : year
   const periodLabel = `${prevYear}年${prevMonth}月${cutoff+1}日 〜 ${year}年${month+1}月${cutoff}日`
 
-  // この月のworkReports
-  const mk = `${year}-${String(month+1).padStart(2,'0')}`
-  const monthReports = workReports.filter(r => r.date?.startsWith(mk))
+  // 締め日に基づく対象期間のworkReports（例：20日締め → 前月21日〜当月20日）
+  const prevM = month === 0 ? 11 : month - 1
+  const prevY = month === 0 ? year - 1 : year
+  const periodStart = `${prevY}-${String(prevM+1).padStart(2,'0')}-${String(cutoff+1).padStart(2,'0')}`
+  const periodEnd = `${year}-${String(month+1).padStart(2,'0')}-${String(cutoff).padStart(2,'0')}`
+  const monthReports = workReports.filter(r => r.date && r.date >= periodStart && r.date <= periodEnd)
 
   // スタッフごとの実績計算
   const calcActualWage = (s) => {
@@ -307,30 +310,61 @@ export default function WagePage() {
 
       {/* 勤務報告一覧 */}
       <Card>
-        <SectionTitle icon="📋" title="勤務報告一覧" desc="スタッフから送られた実績報告" />
+        <SectionTitle icon="📋" title="勤務報告一覧" desc={`対象期間：${periodLabel}`} />
         {monthReports.length===0
           ? <div style={{ textAlign:'center', padding:'1.5rem 0', color:'var(--text3)', fontSize:13 }}><div style={{ fontSize:28, marginBottom:8 }}>📭</div>まだ勤務報告はありません</div>
           : monthReports.sort((a,b)=>a.date.localeCompare(b.date)).map((r,i) => {
             const s = staff.find(x => x.id===r.staffId)
             const si = staff.indexOf(s)
-            const [,,d] = r.date.split('-')
+            const [ry,rm,rd] = r.date.split('-')
             const dw = getDay(new Date(r.date))
+            const submittedAt = r.createdAt ? new Date(r.createdAt) : null
+            const submittedLabel = submittedAt
+              ? `${submittedAt.getFullYear()}/${submittedAt.getMonth()+1}/${submittedAt.getDate()} ${String(submittedAt.getHours()).padStart(2,'0')}:${String(submittedAt.getMinutes()).padStart(2,'0')} 提出`
+              : ''
             return (
-              <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:i<monthReports.length-1?'1px solid var(--border)':'none' }}>
-                <Avatar name={r.staffName} size={32} colorIndex={si>=0?si:0} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:600 }}>{r.staffName}</div>
-                  <div style={{ fontSize:12, color:'var(--text2)' }}>
-                    {month+1}月{parseInt(d)}日（{DAY_NAMES[dw]}）　⏱️ {r.hours}時間
-                    {s && <span style={{ marginLeft:6, color:'var(--green-text)', fontWeight:600 }}>→ ¥{(s.hourlyWage*r.hours).toLocaleString()}</span>}
+              <div key={r.id} style={{ padding:'12px 0', borderBottom:i<monthReports.length-1?'1px solid var(--border)':'none' }}>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                  <Avatar name={r.staffName} size={36} colorIndex={si>=0?si:0} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
+                      <span style={{ fontSize:14, fontWeight:700 }}>{r.staffName}</span>
+                      {s && <span style={{ fontSize:11, color:'var(--text3)' }}>時給 ¥{s.hourlyWage.toLocaleString()}</span>}
+                    </div>
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:4 }}>
+                      <span style={{ fontSize:12, padding:'2px 8px', background:'var(--accent-light)', color:'var(--accent-text)', borderRadius:999, fontWeight:600 }}>
+                        📅 {parseInt(rm)}月{parseInt(rd)}日（{DAY_NAMES[dw]}）
+                      </span>
+                      <span style={{ fontSize:12, padding:'2px 8px', background:'var(--green-light)', color:'var(--green-text)', borderRadius:999, fontWeight:700 }}>
+                        ⏱️ {r.hours}時間
+                      </span>
+                      {s && <span style={{ fontSize:12, padding:'2px 8px', background:'rgba(74,124,89,0.1)', color:'var(--green-text)', borderRadius:999, fontWeight:700 }}>
+                        💴 ¥{(s.hourlyWage * r.hours).toLocaleString()}
+                      </span>}
+                    </div>
+                    {r.memo && <div style={{ fontSize:11, color:'var(--text3)', marginBottom:3, fontStyle:'italic' }}>💬 「{r.memo}」</div>}
+                    {submittedLabel && <div style={{ fontSize:10, color:'var(--text3)' }}>🕐 {submittedLabel}</div>}
                   </div>
-                  {r.memo && <div style={{ fontSize:11, color:'var(--text3)', marginTop:2, fontStyle:'italic' }}>「{r.memo}」</div>}
+                  <Btn size="sm" variant="danger" onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}>削除</Btn>
                 </div>
-                <Btn size="sm" variant="danger" onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}>削除</Btn>
               </div>
             )
           })
         }
+        {monthReports.length > 0 && (
+          <div style={{ marginTop:12, padding:'10px 12px', background:'var(--surface2)', borderRadius:'var(--radius-sm)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontSize:12, color:'var(--text2)', fontWeight:600 }}>期間合計 ({monthReports.length}件)</span>
+            <div style={{ display:'flex', gap:16 }}>
+              <span style={{ fontSize:13, fontWeight:700 }}>⏱️ {monthReports.reduce((s,r)=>s+(parseFloat(r.hours)||0),0)}時間</span>
+              <span style={{ fontSize:13, fontWeight:700, color:'var(--green-text)' }}>
+                💴 ¥{monthReports.reduce((s,r)=>{
+                  const st=staff.find(x=>x.id===r.staffId)
+                  return s+(st?(st.hourlyWage*(parseFloat(r.hours)||0)):0)
+                },0).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   )
