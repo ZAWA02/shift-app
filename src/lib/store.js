@@ -35,7 +35,7 @@ export function monthKey(year, month) {
   return `${year}-${String(month+1).padStart(2,'0')}`
 }
 
-function applyWishToShifts(staffId, newWish, staff, monthShifts, year, month) {
+function applyWishToShifts(staffId, newWish, oldWish, staff, monthShifts, year, month) {
   const daysInMonth = new Date(year, month+1, 0).getDate()
   const s = JSON.parse(JSON.stringify(monthShifts || {}))
   const count = {}
@@ -45,16 +45,22 @@ function applyWishToShifts(staffId, newWish, staff, monthShifts, year, month) {
   if (!s[staffId]) s[staffId] = {}
   for (let d = 0; d < daysInMonth; d++) {
     const w = newWish[d]
+    const prev = oldWish ? oldWish[d] : undefined
     if (w === 'ok') {
+      // 出勤希望 → シフトに追加
       staff.filter(x => x.id!==staffId && s[x.id]?.[d]).forEach(other => {
         if ((count[other.id]||0) > (count[staffId]||0)) s[other.id][d] = false
       })
       s[staffId][d] = true
       count[staffId] = (count[staffId]||0) + 1
-    } else {
-      // 'ng' または リセット済み → シフトからも削除
+    } else if (w === 'ng') {
+      // NG → シフトから削除
+      s[staffId][d] = false
+    } else if (prev === 'ok') {
+      // 以前は希望○だったが今回削除 → シフトから削除
       s[staffId][d] = false
     }
+    // それ以外（管理者が手動で設定した日など）はそのまま維持
   }
   return s
 }
@@ -125,10 +131,11 @@ export const useStore = create(
       saveWish: (staffId, wishData, year, month) => {
         const { staff, wishes, shifts } = get()
         const mk = monthKey(year, month)
+        const oldWish = (wishes[mk] || {})[staffId] || {}
         const updatedWishes = { ...wishes, [mk]: { ...(wishes[mk]||{}), [staffId]: wishData } }
         const updatedShifts = {
           ...shifts,
-          [mk]: applyWishToShifts(staffId, wishData, staff, shifts[mk], year, month)
+          [mk]: applyWishToShifts(staffId, wishData, oldWish, staff, shifts[mk], year, month)
         }
         set({ wishes: updatedWishes, shifts: updatedShifts })
         syncCloud('wishes', updatedWishes)
