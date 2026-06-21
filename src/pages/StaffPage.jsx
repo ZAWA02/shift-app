@@ -48,6 +48,7 @@ export default function StaffPage() {
   const [submitted, setSubmitted] = useState(false)
   const [selYear, setSelYear] = useState(shiftMonth.year)
   const [selMonth, setSelMonth] = useState(shiftMonth.month)
+  const [editPastMode, setEditPastMode] = useState(false)
 
   const mk = `${selYear}-${String(selMonth+1).padStart(2,'0')}`
   const monthWishes = wishes[mk] || {}
@@ -68,6 +69,7 @@ export default function StaffPage() {
     setSelectedStaff(id)
     setWishState({ ...(monthWishes[id] || {}) })
     setSubmitted(false)
+    setEditPastMode(false)
   }
 
   const toggle = (d) => {
@@ -247,7 +249,19 @@ export default function StaffPage() {
       </Card>
 
       <Card style={{ marginBottom: 16, opacity: selectedStaff ? 1 : 0.5, pointerEvents: selectedStaff ? 'auto' : 'none', padding: '1rem 0.75rem' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>② 出勤できる日・できない日を選んでください</div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>② 出勤できる日・できない日を選んでください</div>
+          {selectedStaff && monthWishes[selectedStaff] && (
+            <button onClick={() => setEditPastMode(v => !v)} style={{
+              fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              background: editPastMode ? '#FEF2F2' : 'var(--surface2)',
+              color: editPastMode ? '#991B1B' : 'var(--text3)',
+            }}>
+              {editPastMode ? '✏️ 修正モード中' : '過去の日も修正する'}
+            </button>
+          )}
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 4, width: '100%' }}>
           {DAY_NAMES.map((d, i) => (
             <div key={d} style={{ textAlign:'center', fontSize:11, fontWeight:700, padding:'4px 0',
@@ -259,8 +273,9 @@ export default function StaffPage() {
           {Array.from({ length: days }, (_, i) => i+1).map(d => {
             const dw = getDay(new Date(selYear, selMonth, d))
             const state = wishState[d-1]
+            const isPast = (selYear===now.getFullYear() && selMonth===now.getMonth()) && d < now.getDate()
             const isRest = isRestDay(selYear, selMonth, d)
-            const isDisabled = isRest
+            const isDisabled = isRest || (isPast && !editPastMode)
             const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
             return (
               <button key={d} onClick={() => !isDisabled && toggle(d-1)} style={{
@@ -269,8 +284,8 @@ export default function StaffPage() {
                 borderRadius:'var(--radius-sm)',
                 border: state==='ok'?'2px solid #2563EB':state==='ng'?'2px solid #DC2626':'1px solid var(--border)',
                 background: isRest?'var(--surface2)':state==='ok'?'#EFF4FF':state==='ng'?'#FEF2F2':'var(--surface)',
-                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':isDisabled?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                opacity: 1,
+                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':(isPast&&!editPastMode)?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                opacity: (isPast && !editPastMode) ? 0.35 : 1,
                 cursor: isDisabled ? 'default' : 'pointer',
                 fontFamily:'inherit', fontSize:13, fontWeight: state ? 700 : 400,
               }}>
