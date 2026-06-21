@@ -43,14 +43,11 @@ export default function StaffHome() {
     .filter(r => r.staffId === selectedStaffId && (r.date||'').startsWith(mk))
     .sort((a,b) => a.date.localeCompare(b.date))
 
-  // 勤務報告できる日 = 今日以前の全日（シフト外でも選べる）、過去月は全日
-  const isCurrentMonth = selYear === now.getFullYear() && selMonth === now.getMonth()
-  const reportableDays = Array.from({ length: days }, (_, i) => i + 1).filter(d => {
-    if (!isCurrentMonth) return true // 過去月は全日OK
-    const date = new Date(selYear, selMonth, d)
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    return date <= today
-  })
+  // 勤務報告できる日 = 今日以前の日付なら何月でもOK（シフト外でも選べる）
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const reportableDays = Array.from({ length: days }, (_, i) => i + 1).filter(d =>
+    new Date(selYear, selMonth, d) <= today
+  )
   const shiftDateOptions = reportableDays.map(d => {
     const dw = getDay(new Date(selYear, selMonth, d))
     const dk = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
