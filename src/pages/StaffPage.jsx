@@ -259,9 +259,8 @@ export default function StaffPage() {
           {Array.from({ length: days }, (_, i) => i+1).map(d => {
             const dw = getDay(new Date(selYear, selMonth, d))
             const state = wishState[d-1]
-            const isPast = (selYear===now.getFullYear() && selMonth===now.getMonth()) && d < now.getDate()
             const isRest = isRestDay(selYear, selMonth, d)
-            const isDisabled = isPast || isRest
+            const isDisabled = isRest
             const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
             return (
               <button key={d} onClick={() => !isDisabled && toggle(d-1)} style={{
@@ -271,7 +270,7 @@ export default function StaffPage() {
                 border: state==='ok'?'2px solid #2563EB':state==='ng'?'2px solid #DC2626':'1px solid var(--border)',
                 background: isRest?'var(--surface2)':state==='ok'?'#EFF4FF':state==='ng'?'#FEF2F2':'var(--surface)',
                 color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':isDisabled?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                opacity: isPast ? 0.3 : 1,
+                opacity: 1,
                 cursor: isDisabled ? 'default' : 'pointer',
                 fontFamily:'inherit', fontSize:13, fontWeight: state ? 700 : 400,
               }}>
