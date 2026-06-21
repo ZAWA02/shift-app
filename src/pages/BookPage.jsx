@@ -105,6 +105,8 @@ export default function BookPage() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({ name: '', tel: '', note: '' })
   const [done, setDone] = useState(null)
+  const [nameError, setNameError] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const daysInMonth = getDaysInMonth(new Date(calYear, calMonth))
   const firstDay = getDay(new Date(calYear, calMonth, 1))
@@ -114,8 +116,13 @@ export default function BookPage() {
   const prevMo = () => { if(calMonth===0){setCalMonth(11);setCalYear(y=>y-1)}else setCalMonth(m=>m-1) }
   const nextMo = () => { if(calMonth===11){setCalMonth(0);setCalYear(y=>y+1)}else setCalMonth(m=>m+1) }
 
+  const goToConfirm = () => {
+    if (!form.name.trim()) { setNameError('お名前を入力してください'); return }
+    setNameError('')
+    setShowConfirm(true)
+  }
+
   const confirmBooking = () => {
-    if (!form.name.trim()) return alert('お名前を入力してください')
     const b = { name:form.name.trim(), tel:form.tel.trim(), note:form.note.trim(), date:dateLabel, dateKey, slot:settings.slots[selSlot], slotIdx:selSlot }
     addBooking(b)
     setDone(b)
@@ -125,6 +132,7 @@ export default function BookPage() {
   const reset = () => {
     setSelDate(null); setSelSlot(null); setStep(1)
     setForm({ name:'', tel:'', note:'' }); setDone(null)
+    setNameError(''); setShowConfirm(false)
   }
 
   // ---- 完了画面（カレンダー付き） ----
@@ -327,7 +335,7 @@ export default function BookPage() {
         </>
       )}
 
-      {step === 2 && (
+      {step === 2 && !showConfirm && (
         <div>
           <Btn size="sm" style={{ marginBottom:16 }} onClick={() => setStep(1)}>‹ 戻る</Btn>
           <Card style={{ background:'var(--accent-light)', border:'1px solid rgba(37,99,235,0.2)', marginBottom:16 }}>
@@ -336,21 +344,113 @@ export default function BookPage() {
             <div style={{ fontSize:13, color:'var(--accent-text)', marginTop:2 }}>{settings.slots[selSlot]}</div>
           </Card>
           <Card>
-            <div style={{ fontSize:13, fontWeight:700, marginBottom:16 }}>お客様情報を入力してください</div>
-            <Input label="お名前（必須）" value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} placeholder="山田 花子" />
-            <Input label="電話番号" value={form.tel} onChange={e => setForm(f=>({...f,tel:e.target.value}))} placeholder="090-0000-0000" />
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>お客様情報を入力してください</div>
+            <div style={{ fontSize:12, color:'var(--text3)', marginBottom:16 }}>※ すべて入力が終わったら「確認画面へ」を押してください</div>
+
+            {/* お名前 */}
             <div style={{ marginBottom:16 }}>
+              <label style={{ fontSize:12, color:'var(--text2)', display:'block', marginBottom:5, fontWeight:600 }}>
+                お名前 <span style={{ color:'var(--red)', fontSize:11 }}>（必須）</span>
+              </label>
+              <input
+                value={form.name}
+                onChange={e => { setForm(f=>({...f,name:e.target.value})); if(e.target.value.trim()) setNameError('') }}
+                placeholder="山田 花子"
+                style={{
+                  width:'100%', padding:'12px 14px', fontSize:15, fontFamily:'inherit',
+                  border: nameError ? '2px solid var(--red)' : '2px solid var(--border-strong)',
+                  borderRadius:'var(--radius-sm)', background:'var(--surface)', color:'var(--text)',
+                  boxSizing:'border-box',
+                }}
+              />
+              {nameError && (
+                <div style={{ fontSize:12, color:'var(--red)', marginTop:5, fontWeight:600 }}>⚠️ {nameError}</div>
+              )}
+              <div style={{ fontSize:11, color:'var(--text3)', marginTop:5 }}>
+                💡 キャンセルの際にも使いますので、正確にご入力ください
+              </div>
+            </div>
+
+            {/* 電話番号 */}
+            <div style={{ marginBottom:16 }}>
+              <label style={{ fontSize:12, color:'var(--text2)', display:'block', marginBottom:5, fontWeight:600 }}>
+                電話番号 <span style={{ color:'var(--text3)', fontSize:11 }}>（任意）</span>
+              </label>
+              <input
+                value={form.tel}
+                onChange={e => setForm(f=>({...f,tel:e.target.value}))}
+                placeholder="090-0000-0000"
+                type="tel"
+                style={{
+                  width:'100%', padding:'12px 14px', fontSize:15, fontFamily:'inherit',
+                  border:'1px solid var(--border-strong)', borderRadius:'var(--radius-sm)',
+                  background:'var(--surface)', color:'var(--text)', boxSizing:'border-box',
+                }}
+              />
+              <div style={{ fontSize:11, color:'var(--text3)', marginTop:5 }}>
+                💡 ご連絡が必要な場合にお知らせします（なくても予約できます）
+              </div>
+            </div>
+
+            {/* メモ */}
+            <div style={{ marginBottom:20 }}>
               <label style={{ fontSize:12, color:'var(--text2)', display:'block', marginBottom:5, fontWeight:500 }}>メモ・ご要望（任意）</label>
               <textarea value={form.note} onChange={e => setForm(f=>({...f,note:e.target.value}))} placeholder="初めての来店です…" style={{
                 width:'100%', height:64, padding:'10px 12px', fontSize:13, resize:'none',
                 border:'1px solid var(--border-strong)', borderRadius:'var(--radius-sm)',
                 background:'var(--surface)', color:'var(--text)', fontFamily:'inherit', lineHeight:1.6,
+                boxSizing:'border-box',
               }} />
             </div>
-            <Btn variant="primary" size="lg" style={{ width:'100%', fontSize:16, padding:'16px', borderRadius:'var(--radius)' }} onClick={confirmBooking}>
-              ✅ 予約を確定する
+
+            <Btn variant="primary" size="lg" style={{ width:'100%', fontSize:16, padding:'16px', borderRadius:'var(--radius)' }} onClick={goToConfirm}>
+              確認画面へ →
             </Btn>
           </Card>
+        </div>
+      )}
+
+      {step === 2 && showConfirm && (
+        <div>
+          <Btn size="sm" style={{ marginBottom:16 }} onClick={() => setShowConfirm(false)}>‹ 戻って修正する</Btn>
+          <div style={{ textAlign:'center', marginBottom:16 }}>
+            <div style={{ fontSize:16, fontWeight:700 }}>予約内容の確認</div>
+            <div style={{ fontSize:12, color:'var(--text3)', marginTop:4 }}>内容をご確認の上、「予約を確定する」を押してください</div>
+          </div>
+          <Card style={{ marginBottom:16, border:'2px solid var(--accent)' }}>
+            <div style={{ display:'grid', gap:12 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)', paddingBottom:10 }}>
+                <span style={{ fontSize:12, color:'var(--text3)', fontWeight:600 }}>日付</span>
+                <span style={{ fontSize:15, fontWeight:700 }}>{dateLabel}</span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)', paddingBottom:10 }}>
+                <span style={{ fontSize:12, color:'var(--text3)', fontWeight:600 }}>時間帯</span>
+                <span style={{ fontSize:15, fontWeight:700 }}>{settings.slots[selSlot]}</span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)', paddingBottom:10 }}>
+                <span style={{ fontSize:12, color:'var(--text3)', fontWeight:600 }}>お名前</span>
+                <span style={{ fontSize:15, fontWeight:700 }}>{form.name} 様</span>
+              </div>
+              {form.tel && (
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)', paddingBottom:10 }}>
+                  <span style={{ fontSize:12, color:'var(--text3)', fontWeight:600 }}>電話番号</span>
+                  <span style={{ fontSize:14 }}>{form.tel}</span>
+                </div>
+              )}
+              {form.note && (
+                <div>
+                  <span style={{ fontSize:12, color:'var(--text3)', fontWeight:600 }}>メモ</span>
+                  <div style={{ fontSize:13, marginTop:4 }}>{form.note}</div>
+                </div>
+              )}
+            </div>
+          </Card>
+          <Btn variant="primary" size="lg" style={{ width:'100%', fontSize:16, padding:'18px', borderRadius:'var(--radius)', marginBottom:10 }} onClick={confirmBooking}>
+            ✅ 予約を確定する
+          </Btn>
+          <Btn style={{ width:'100%' }} onClick={() => setShowConfirm(false)}>
+            ✏️ 内容を修正する
+          </Btn>
         </div>
       )}
     </div>

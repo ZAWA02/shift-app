@@ -175,23 +175,32 @@ export default function StaffPage() {
       <StepIndicator steps={['名前を選ぶ', '希望日を選ぶ', '送信する']} current={step} />
 
       <Notice color="blue">
-        <div>
-          <strong>操作方法：</strong><br />
-          1回タップ → <strong>🔵 出勤希望</strong>　2回 → <strong>🔴 入れない</strong>　3回 → リセット
+        <div style={{ lineHeight:1.8 }}>
+          <strong>📅 カレンダーの使い方</strong><br />
+          <span>1回タップ → <span style={{ background:'#EFF4FF', color:'#1D4ED8', fontWeight:700, padding:'1px 6px', borderRadius:4 }}>○ 出勤希望</span></span><br />
+          <span>2回タップ → <span style={{ background:'#FEF2F2', color:'#991B1B', fontWeight:700, padding:'1px 6px', borderRadius:4 }}>× 入れない</span></span><br />
+          <span>3回タップ → リセット</span>
         </div>
       </Notice>
 
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>① 名前を選んでください</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>① 名前を選んでください</div>
+        <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10 }}>あなたの名前を選んでから日付を選んでください</div>
         <select value={selectedStaff} onChange={e => handleStaffChange(e.target.value)} style={{
-          width: '100%', padding: '12px 14px', fontSize: 15, fontWeight: 600,
-          borderRadius: 'var(--radius-sm)', border: '2px solid var(--border-strong)',
-          background: 'var(--surface)', color: selectedStaff ? 'var(--text)' : 'var(--text3)',
+          width: '100%', padding: '14px 14px', fontSize: 16, fontWeight: 600,
+          borderRadius: 'var(--radius-sm)', border: selectedStaff ? '2px solid var(--accent)' : '2px solid var(--border-strong)',
+          background: selectedStaff ? 'var(--accent-light)' : 'var(--surface)',
+          color: selectedStaff ? 'var(--accent-text)' : 'var(--text3)',
           fontFamily: 'inherit', cursor: 'pointer',
         }}>
           <option value="">👤 名前を選択してください</option>
           {staff.map(s => <option key={s.id} value={s.id}>{s.name}（{s.role}）</option>)}
         </select>
+        {selectedStaff && (
+          <div style={{ marginTop:10, padding:'8px 12px', background:'#ECFDF5', borderRadius:'var(--radius-sm)', fontSize:13, color:'var(--green-text)', fontWeight:600 }}>
+            ✅ {myName}さんとして入力します
+          </div>
+        )}
       </Card>
 
       <Card style={{ marginBottom: 16, opacity: selectedStaff ? 1 : 0.5, pointerEvents: selectedStaff ? 'auto' : 'none' }}>
@@ -241,14 +250,20 @@ export default function StaffPage() {
         }} />
       </Card>
 
+      {selectedStaff && okCount === 0 && (
+        <div style={{ padding:'12px 16px', background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:'var(--radius-sm)', marginBottom:12, fontSize:13, color:'#92400E' }}>
+          ⬆️ カレンダーで出勤できる日を選んでください（🔵 ○ にする）
+        </div>
+      )}
       <Btn variant="primary" size="lg"
-        style={{ width:'100%', fontSize:15, padding:'14px', opacity:(selectedStaff && okCount>0)?1:0.4 }}
+        style={{ width:'100%', fontSize:15, padding:'16px', opacity:(selectedStaff && okCount>0)?1:0.4 }}
         onClick={submit} disabled={!selectedStaff || okCount===0}>
         ✅ {displayMonth}の希望を送信する
+        {selectedStaff && okCount > 0 && <span style={{ fontSize:12, opacity:0.8, marginLeft:6 }}>({okCount}日選択中)</span>}
       </Btn>
-      {selectedStaff && okCount===0 && (
+      {!selectedStaff && (
         <div style={{ textAlign:'center', fontSize:12, color:'var(--text3)', marginTop:8 }}>
-          出勤希望日を1日以上選ぶと送信できます
+          ① まず名前を選んでください
         </div>
       )}
     </div>
