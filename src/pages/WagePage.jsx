@@ -251,53 +251,63 @@ export default function WagePage() {
 
                 {/* 展開：日別詳細 */}
                 {isExpanded && (
-                  <div style={{ borderTop:'1px solid var(--border)', background:'var(--bg)' }}>
+                  <div style={{ borderTop:'1px solid var(--border)', background:'var(--bg)', padding:'10px 12px' }}>
                     {staffReports.length === 0 ? (
-                      <div style={{ padding:'14px 16px', fontSize:12, color:'var(--text3)', textAlign:'center' }}>
+                      <div style={{ padding:'10px 0', fontSize:12, color:'var(--text3)', textAlign:'center' }}>
                         勤務報告がありません（シフトベースの予定時間で計算中）
                       </div>
                     ) : (
                       <>
-                        {/* 日別テーブルヘッダー */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'6px 16px', borderBottom:'1px solid var(--border)', background:'var(--surface2)' }}>
-                          {['日付','時間','時給','金額',''].map((h,j) => (
-                            <div key={j} style={{ fontSize:10, color:'var(--text3)', fontWeight:600, textAlign: j===0?'left':'right' }}>{h}</div>
-                          ))}
-                        </div>
-                        {staffReports.map((r, j) => {
-                          const [,rm,rd] = r.date.split('-')
-                          const dw = getDay(new Date(r.date))
-                          const amount = Math.round(s.hourlyWage * (parseFloat(r.hours)||0))
-                          const submittedAt = r.createdAt ? new Date(r.createdAt) : null
-                          return (
-                            <div key={r.id} style={{ borderBottom: j < staffReports.length-1 ? '1px solid var(--border)' : 'none' }}>
-                              <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'10px 16px', alignItems:'center', background: j%2===0?'transparent':'rgba(0,0,0,0.012)' }}>
-                                <div>
-                                  <div style={{ fontSize:13, fontWeight:600 }}>
+                        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                          {staffReports.map((r) => {
+                            const [,rm,rd] = r.date.split('-')
+                            const dw = getDay(new Date(r.date))
+                            const amount = Math.round(s.hourlyWage * (parseFloat(r.hours)||0))
+                            const submittedAt = r.createdAt ? new Date(r.createdAt) : null
+                            return (
+                              <div key={r.id} style={{ background:'var(--surface)', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', padding:'10px 12px' }}>
+                                {/* 1行目：日付 + 金額 */}
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                                  <span style={{ fontSize:14, fontWeight:700 }}>
                                     {parseInt(rm)}月{parseInt(rd)}日
-                                    <span style={{ fontSize:11, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)', marginLeft:4 }}>({DAY_NAMES[dw]})</span>
+                                    <span style={{ fontSize:12, fontWeight:600, color: dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)', marginLeft:5 }}>({DAY_NAMES[dw]})</span>
+                                  </span>
+                                  <span style={{ fontSize:15, fontWeight:700, color:'var(--green-text)' }}>¥{amount.toLocaleString()}</span>
+                                </div>
+                                {/* 2行目：時間 × 時給 */}
+                                <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom: (r.memo||submittedAt) ? 6 : 0 }}>
+                                  <span style={{ fontSize:12, padding:'2px 8px', background:'var(--accent-light)', color:'var(--accent-text)', borderRadius:999, fontWeight:600 }}>⏱️ {r.hours}時間</span>
+                                  <span style={{ fontSize:11, color:'var(--text3)' }}>×</span>
+                                  <span style={{ fontSize:12, color:'var(--text3)' }}>¥{s.hourlyWage.toLocaleString()}/h</span>
+                                </div>
+                                {/* 3行目：メモ・提出日時 */}
+                                {(r.memo || submittedAt) && (
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:4 }}>
+                                    {r.memo && <span style={{ fontSize:11, color:'var(--text3)', fontStyle:'italic' }}>💬 {r.memo}</span>}
+                                    <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:'auto' }}>
+                                      {submittedAt && <span style={{ fontSize:10, color:'var(--text3)' }}>提出 {submittedAt.getMonth()+1}/{submittedAt.getDate()} {String(submittedAt.getHours()).padStart(2,'0')}:{String(submittedAt.getMinutes()).padStart(2,'0')}</span>}
+                                      <button onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}
+                                        style={{ fontSize:11, padding:'2px 8px', background:'var(--red-light)', color:'var(--red-text)', border:'none', borderRadius:4, cursor:'pointer', fontFamily:'inherit' }}>削除</button>
+                                    </div>
                                   </div>
-                                  {r.memo && <div style={{ fontSize:10, color:'var(--text3)', fontStyle:'italic' }}>「{r.memo}」</div>}
-                                  {submittedAt && <div style={{ fontSize:10, color:'var(--text3)' }}>提出 {submittedAt.getMonth()+1}/{submittedAt.getDate()} {String(submittedAt.getHours()).padStart(2,'0')}:{String(submittedAt.getMinutes()).padStart(2,'0')}</div>}
-                                </div>
-                                <div style={{ textAlign:'right', fontSize:13, fontWeight:700 }}>{r.hours}h</div>
-                                <div style={{ textAlign:'right', fontSize:12, color:'var(--text3)' }}>¥{s.hourlyWage.toLocaleString()}</div>
-                                <div style={{ textAlign:'right', fontSize:13, fontWeight:700, color:'var(--green-text)' }}>¥{amount.toLocaleString()}</div>
-                                <div style={{ textAlign:'right' }}>
-                                  <button onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}
-                                    style={{ fontSize:12, padding:'2px 6px', background:'var(--red-light)', color:'var(--red-text)', border:'none', borderRadius:4, cursor:'pointer' }}>削</button>
-                                </div>
+                                )}
+                                {!r.memo && !submittedAt && (
+                                  <div style={{ textAlign:'right' }}>
+                                    <button onClick={() => { if(confirm('この報告を削除しますか？')) deleteWorkReport(r.id) }}
+                                      style={{ fontSize:11, padding:'2px 8px', background:'var(--red-light)', color:'var(--red-text)', border:'none', borderRadius:4, cursor:'pointer', fontFamily:'inherit' }}>削除</button>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
+                        </div>
                         {/* 小計 */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 80px 80px 90px 40px', gap:0, padding:'8px 16px', borderTop:'2px solid var(--border)', background:'var(--surface2)' }}>
-                          <div style={{ fontSize:12, fontWeight:700, color:'var(--text2)' }}>小計 ({staffReports.length}日)</div>
-                          <div style={{ textAlign:'right', fontSize:13, fontWeight:700 }}>{staffReports.reduce((a,r)=>a+(parseFloat(r.hours)||0),0)}h</div>
-                          <div />
-                          <div style={{ textAlign:'right', fontSize:14, fontWeight:700, color:'var(--green-text)' }}>¥{s.wage.toLocaleString()}</div>
-                          <div />
+                        <div style={{ marginTop:10, padding:'10px 12px', background:'var(--surface2)', borderRadius:'var(--radius-sm)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ fontSize:12, color:'var(--text2)', fontWeight:600 }}>小計 {staffReports.length}日</span>
+                          <div style={{ display:'flex', gap:16, alignItems:'center' }}>
+                            <span style={{ fontSize:13, fontWeight:700 }}>⏱️ {staffReports.reduce((a,r)=>a+(parseFloat(r.hours)||0),0)}h</span>
+                            <span style={{ fontSize:14, fontWeight:700, color:'var(--green-text)' }}>¥{s.wage.toLocaleString()}</span>
+                          </div>
                         </div>
                       </>
                     )}
