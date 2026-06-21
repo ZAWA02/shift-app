@@ -251,7 +251,7 @@ export default function StaffPage() {
       <Card style={{ marginBottom: 16, opacity: selectedStaff ? 1 : 0.5, pointerEvents: selectedStaff ? 'auto' : 'none', padding: '1rem 0.75rem' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 14 }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>② 出勤できる日・できない日を選んでください</div>
-          {selectedStaff && monthWishes[selectedStaff] && (
+          {selectedStaff && selYear === now.getFullYear() && selMonth === now.getMonth() && (
             <button onClick={() => setEditPastMode(v => !v)} style={{
               fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
               border: 'none', cursor: 'pointer', fontFamily: 'inherit',
@@ -273,7 +273,9 @@ export default function StaffPage() {
           {Array.from({ length: days }, (_, i) => i+1).map(d => {
             const dw = getDay(new Date(selYear, selMonth, d))
             const state = wishState[d-1]
-            const isPast = (selYear===now.getFullYear() && selMonth===now.getMonth()) && d < now.getDate()
+            const isPastMonth = selYear < now.getFullYear() || (selYear === now.getFullYear() && selMonth < now.getMonth())
+            const isPastDay = (selYear===now.getFullYear() && selMonth===now.getMonth()) && d < now.getDate()
+            const isPast = isPastMonth || isPastDay
             const isRest = isRestDay(selYear, selMonth, d)
             const isDisabled = isRest || (isPast && !editPastMode)
             const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
@@ -284,7 +286,7 @@ export default function StaffPage() {
                 borderRadius:'var(--radius-sm)',
                 border: state==='ok'?'2px solid #2563EB':state==='ng'?'2px solid #DC2626':'1px solid var(--border)',
                 background: isRest?'var(--surface2)':state==='ok'?'#EFF4FF':state==='ng'?'#FEF2F2':'var(--surface)',
-                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':(isPast&&!editPastMode)?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':isDisabled?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
                 opacity: (isPast && !editPastMode) ? 0.35 : 1,
                 cursor: isDisabled ? 'default' : 'pointer',
                 fontFamily:'inherit', fontSize:13, fontWeight: state ? 700 : 400,
