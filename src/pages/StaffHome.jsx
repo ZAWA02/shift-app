@@ -43,11 +43,19 @@ export default function StaffHome() {
     .filter(r => r.staffId === selectedStaffId && (r.date||'').startsWith(mk))
     .sort((a,b) => a.date.localeCompare(b.date))
 
-  // シフト日を選択肢に
-  const shiftDateOptions = myShiftDays.map(d => {
+  // 勤務報告できる日 = 今日以前の全日（シフト外でも選べる）、過去月は全日
+  const isCurrentMonth = selYear === now.getFullYear() && selMonth === now.getMonth()
+  const reportableDays = Array.from({ length: days }, (_, i) => i + 1).filter(d => {
+    if (!isCurrentMonth) return true // 過去月は全日OK
+    const date = new Date(selYear, selMonth, d)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    return date <= today
+  })
+  const shiftDateOptions = reportableDays.map(d => {
     const dw = getDay(new Date(selYear, selMonth, d))
     const dk = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    return { label: `${selMonth+1}月${d}日（${DAY_NAMES[dw]}）`, value: dk }
+    const isShift = !!myShifts[d - 1]
+    return { label: `${selMonth+1}月${d}日（${DAY_NAMES[dw]}）${isShift ? '' : ' ※シフト外'}`, value: dk }
   })
 
   // タップした日の予約一覧
@@ -293,9 +301,14 @@ export default function StaffHome() {
                   <option value="">選択してください</option>
                   {shiftDateOptions.length > 0
                     ? shiftDateOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
-                    : <option disabled>シフトの登録がありません</option>
+                    : <option disabled>報告できる日がありません</option>
                   }
                 </select>
+                {reportDate && shiftDateOptions.find(o => o.value === reportDate)?.label.includes('シフト外') && (
+                  <div style={{ fontSize:12, color:'#92400E', background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:'var(--radius-sm)', padding:'6px 10px', marginTop:6 }}>
+                    ⚠️ シフト外の日です。急に入ったなど事情がある場合はそのまま送信してください。
+                  </div>
+                )}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 12, color: 'var(--text2)', display: 'block', marginBottom: 5, fontWeight: 600 }}>実際に働いた時間</label>
