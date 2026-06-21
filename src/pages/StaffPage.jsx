@@ -6,6 +6,38 @@ import { useNavigate } from 'react-router-dom'
 
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
 
+function nthWeekday(year, month, nth, weekday) {
+  let count = 0
+  for (let d = 1; d <= 31; d++) {
+    const date = new Date(year, month, d)
+    if (date.getMonth() !== month) break
+    if (date.getDay() === weekday) { count++; if (count === nth) return d }
+  }
+  return null
+}
+function shubun(year) { return Math.floor(23.2488 + 0.242194*(year-1980) - Math.floor((year-1980)/4)) }
+function shunbun(year) { return Math.floor(20.8431 + 0.242194*(year-1980) - Math.floor((year-1980)/4)) }
+function isHolidayFixed(year, month, day) {
+  const fixed = [[0,1],[1,11],[1,23],[3,29],[4,3],[4,4],[4,5],[7,11],[10,3],[10,23]]
+  if (fixed.some(([m,d]) => m===month && d===day)) return true
+  if (month===2 && day===shunbun(year)) return true
+  if (month===8 && day===shubun(year)) return true
+  if (month===6 && day===nthWeekday(year,6,3,1)) return true
+  if (month===8 && day===nthWeekday(year,8,3,1)) return true
+  if (month===9 && day===nthWeekday(year,9,2,1)) return true
+  return false
+}
+function isHoliday(year, month, day) {
+  if (isHolidayFixed(year, month, day)) return true
+  const prev = new Date(year, month, day - 1)
+  if (new Date(year,month,day).getDay()===1 && isHolidayFixed(prev.getFullYear(),prev.getMonth(),prev.getDate())) return true
+  return false
+}
+function isRestDay(year, month, day) {
+  const dw = getDay(new Date(year, month, day))
+  return dw === 0 || dw === 6 || isHoliday(year, month, day)
+}
+
 export default function StaffPage() {
   const { staff, wishes, saveWish, shifts, shiftMonth } = useStore()
   const navigate = useNavigate()
@@ -101,21 +133,32 @@ export default function StaffPage() {
               const hasShift = !!myShifts[dayIdx]
               const wish = wishState[dayIdx]
               const isToday = selYear===now.getFullYear() && selMonth===now.getMonth() && d===now.getDate()
+              const isRest = isRestDay(selYear, selMonth, d)
+              const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
               return (
                 <div key={d} style={{
                   aspectRatio:'1', display:'flex', flexDirection:'column',
                   alignItems:'center', justifyContent:'center',
                   borderRadius:'var(--radius-sm)',
                   border: isToday ? '2px solid var(--text)' : '1px solid var(--border)',
-                  background: hasShift ? '#DCFCE7' : wish==='ok' ? '#EFF4FF' : wish==='ng' ? '#FEF2F2' : 'var(--surface)',
+                  background: hasShift ? '#DCFCE7' : isRest ? 'var(--surface2)' : wish==='ok' ? '#EFF4FF' : wish==='ng' ? '#FEF2F2' : 'var(--surface)',
                 }}>
-                  <span style={{
-                    fontSize: 12, fontWeight: hasShift ? 700 : 400,
-                    color: hasShift ? 'var(--green-text)' : wish==='ok' ? 'var(--accent-text)' : wish==='ng' ? 'var(--red-text)' : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                  }}>
-                    {hasShift ? '◯' : wish==='ng' ? '×' : d}
-                  </span>
-                  {!hasShift && wish==='ok' && <span style={{ fontSize:8, color:'var(--accent-text)' }}>希望</span>}
+                  {isRest && !hasShift ? (
+                    <>
+                      <span style={{ fontSize:10, color:restColor, lineHeight:1 }}>{d}</span>
+                      <span style={{ fontSize:8, color:restColor, fontWeight:700, lineHeight:1, marginTop:1 }}>休</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{
+                        fontSize: 12, fontWeight: hasShift ? 700 : 400,
+                        color: hasShift ? 'var(--green-text)' : wish==='ok' ? 'var(--accent-text)' : wish==='ng' ? 'var(--red-text)' : dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                      }}>
+                        {hasShift ? '◯' : wish==='ng' ? '×' : d}
+                      </span>
+                      {!hasShift && wish==='ok' && <span style={{ fontSize:8, color:'var(--accent-text)' }}>希望</span>}
+                    </>
+                  )}
                 </div>
               )
             })}
@@ -217,20 +260,32 @@ export default function StaffPage() {
             const dw = getDay(new Date(selYear, selMonth, d))
             const state = wishState[d-1]
             const isPast = (selYear===now.getFullYear() && selMonth===now.getMonth()) && d < now.getDate()
+            const isRest = isRestDay(selYear, selMonth, d)
+            const isDisabled = isPast || isRest
+            const restColor = dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)'
             return (
-              <button key={d} onClick={() => toggle(d-1)} style={{
+              <button key={d} onClick={() => !isDisabled && toggle(d-1)} style={{
                 aspectRatio:'1', display:'flex', flexDirection:'column',
                 alignItems:'center', justifyContent:'center',
                 borderRadius:'var(--radius-sm)',
                 border: state==='ok'?'2px solid #2563EB':state==='ng'?'2px solid #DC2626':'1px solid var(--border)',
-                background: state==='ok'?'#EFF4FF':state==='ng'?'#FEF2F2':'var(--surface)',
-                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':isPast?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
-                opacity: isPast ? 0.35 : 1,
-                cursor: isPast ? 'default' : 'pointer',
+                background: isRest?'var(--surface2)':state==='ok'?'#EFF4FF':state==='ng'?'#FEF2F2':'var(--surface)',
+                color: state==='ok'?'#1D4ED8':state==='ng'?'#991B1B':isDisabled?'var(--text3)':dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text)',
+                opacity: isPast ? 0.3 : 1,
+                cursor: isDisabled ? 'default' : 'pointer',
                 fontFamily:'inherit', fontSize:13, fontWeight: state ? 700 : 400,
               }}>
-                {state==='ok'?'○':state==='ng'?'×':d}
-                {!state && <span style={{ fontSize:8, color:dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)' }}>{DAY_NAMES[dw]}</span>}
+                {isRest && !state ? (
+                  <>
+                    <span style={{ fontSize:10, color:restColor, lineHeight:1 }}>{d}</span>
+                    <span style={{ fontSize:8, color:restColor, fontWeight:700, lineHeight:1, marginTop:1 }}>休</span>
+                  </>
+                ) : (
+                  <>
+                    {state==='ok'?'○':state==='ng'?'×':d}
+                    {!state && !isRest && <span style={{ fontSize:8, color:dw===0?'var(--red)':dw===6?'var(--accent)':'var(--text3)' }}>{DAY_NAMES[dw]}</span>}
+                  </>
+                )}
               </button>
             )
           })}

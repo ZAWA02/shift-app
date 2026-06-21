@@ -51,7 +51,8 @@ function applyWishToShifts(staffId, newWish, staff, monthShifts, year, month) {
       })
       s[staffId][d] = true
       count[staffId] = (count[staffId]||0) + 1
-    } else if (w === 'ng') {
+    } else {
+      // 'ng' または リセット済み → シフトからも削除
       s[staffId][d] = false
     }
   }
