@@ -46,8 +46,8 @@ export default function StaffPage() {
   const [wishState, setWishState] = useState({})
   const [note, setNote] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [selYear, setSelYear] = useState(shiftMonth.year)
-  const [selMonth, setSelMonth] = useState(shiftMonth.month)
+  const [selYear, setSelYear] = useState(now.getFullYear())
+  const [selMonth, setSelMonth] = useState(now.getMonth())
   const [editPastMode, setEditPastMode] = useState(false)
 
   const mk = `${selYear}-${String(selMonth+1).padStart(2,'0')}`
