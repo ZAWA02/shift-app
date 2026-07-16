@@ -328,102 +328,72 @@ function ShiftCalendar() {
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:selectedDay!==null?'1fr 280px':'1fr', gap:16, alignItems:'start' }}>
-        <Card style={{ padding:'0.75rem', overflowX:'auto' }}>
-          <div style={{ display:'flex', gap:14, marginBottom:12, fontSize:11, flexWrap:'wrap' }}>
-            {(viewMode==='both'||viewMode==='shift') && <span style={{ display:'flex',alignItems:'center',gap:4,color:'var(--green-text)',fontWeight:600 }}><span style={{ width:12,height:12,borderRadius:3,background:'#DCFCE7',border:'1.5px solid #4A7C59',display:'inline-block' }}></span>出勤</span>}
-            {(viewMode==='both'||viewMode==='booking') && <span style={{ display:'flex',alignItems:'center',gap:4,color:'var(--accent-text)',fontWeight:600 }}><span style={{ width:12,height:12,borderRadius:3,background:'var(--accent-light)',border:'1.5px solid #7B5E3A',display:'inline-block' }}></span>予約</span>}
-            <span style={{ color:'var(--text3)' }}>← 日付クリックで詳細</span>
+      <div style={{ display:'grid', gridTemplateColumns:selectedDay!==null?'1fr 260px':'1fr', gap:16, alignItems:'start' }}>
+        {/* ── カレンダーグリッド ── */}
+        <Card style={{ padding:'0.75rem' }}>
+          {/* 曜日ヘッダー */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:4 }}>
+            {DAY_NAMES.map((dn,di) => (
+              <div key={di} style={{ textAlign:'center', fontSize:12, fontWeight:700, padding:'5px 0',
+                color: di===0?'var(--red)':di===6?'var(--accent-text)':'var(--text3)' }}>{dn}</div>
+            ))}
           </div>
-          <table style={{ borderCollapse:'collapse', fontSize:11, whiteSpace:'nowrap', width:'100%' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign:'left', padding:'6px 10px', borderBottom:'2px solid var(--border)', color:'var(--text2)', position:'sticky', left:0, background:'var(--surface)', minWidth:72, zIndex:1 }}>名前</th>
-                {allDays.map(d => {
-                  const dw = getDay(new Date(year,month,d+1))
-                  const bks = getBookingsForDay(d)
-                  const isWeekend = dw===0||dw===6
-                  const isSel = selectedDay===d
-                  return (
-                    <th key={d} onClick={() => setSelectedDay(selectedDay===d?null:d)} style={{
-                      padding:'4px 2px', borderBottom:'2px solid var(--border)', textAlign:'center',
-                      color: isSel?'#FDF5E8':dw===0?'var(--red)':dw===6?'var(--accent-text)':'var(--text2)',
-                      minWidth:30, cursor:'pointer',
-                      background: isSel?'var(--wood-gradient)':isWeekend?(dw===0?'rgba(192,57,43,0.05)':'rgba(46,95,154,0.05)'):'transparent',
-                      borderRadius: isSel?'6px 6px 0 0':0,
-                    }}>
-                      <div style={{ fontWeight:isSel?700:400 }}>{d+1}</div>
-                      <div style={{ fontSize:9 }}>{DAY_NAMES[dw]}</div>
-                      {(viewMode==='both'||viewMode==='booking') && bks.length>0 && (
-                        <div style={{ width:16,height:16,borderRadius:'50%',background:'#7B5E3A',color:'#FDF5E8',fontSize:9,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',margin:'2px auto 0' }}>{bks.length}</div>
-                      )}
-                    </th>
-                  )
-                })}
-                <th style={{ padding:'6px 6px', borderBottom:'2px solid var(--border)', textAlign:'center', color:'var(--text2)', position:'sticky', right:0, background:'var(--surface)' }}>計</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(viewMode==='both'||viewMode==='shift') && staff.map((s,si) => {
-                const row = monthShifts[s.id]||{}
-                const total = getTotal(s.id)
-                const rowBg = si%2===0?'var(--surface)':'#FAF6F0'
-                return (
-                  <tr key={s.id}>
-                    <td style={{ padding:'4px 10px', borderBottom:'1px solid var(--border)', fontWeight:700, fontSize:12, position:'sticky', left:0, background:rowBg, zIndex:1 }}>{s.name.split(' ')[0]}</td>
-                    {allDays.map(d => {
-                      const isSel = selectedDay===d
-                      return (
-                        <td key={d} style={{ padding:'2px 1px', borderBottom:'1px solid var(--border)', textAlign:'center', background:isSel?'rgba(101,79,54,0.06)':'transparent' }}>
-                          <button onClick={() => toggleShift(s.id,d)} style={{ width:26,height:22,borderRadius:5,border:'none', background:row[d]?'#DCFCE7':'transparent', color:row[d]?'#2D5C3A':'transparent', fontSize:12,cursor:'pointer',fontWeight:700 }}>◯</button>
-                        </td>
-                      )
-                    })}
-                    <td style={{ padding:'4px 6px', borderBottom:'1px solid var(--border)', textAlign:'center', position:'sticky', right:0, background:rowBg }}>
-                      <Badge color={total>=15?'green':total>=8?'blue':'gray'}>{total}日</Badge>
-                    </td>
-                  </tr>
-                )
-              })}
 
-              {(viewMode==='both'||viewMode==='booking') && (
-                <tr style={{ borderTop:viewMode==='both'?'2px dashed var(--border)':'none' }}>
-                  <td style={{ padding:'5px 10px', borderBottom:'1px solid var(--border)', fontWeight:700, fontSize:11, color:'var(--accent-text)', position:'sticky', left:0, background:'var(--accent-light)', zIndex:1 }}>📅 予約数</td>
-                  {allDays.map(d => {
-                    const bks = getBookingsForDay(d)
-                    const isSel = selectedDay===d
-                    return (
-                      <td key={d} onClick={() => setSelectedDay(selectedDay===d?null:d)} style={{ padding:'3px 1px', borderBottom:'1px solid var(--border)', textAlign:'center', background:isSel?'rgba(123,94,58,0.15)':bks.length>0?'var(--accent-light)':'transparent', cursor:'pointer' }}>
-                        {bks.length>0 && <div style={{ width:22,height:22,borderRadius:'50%',background:'#7B5E3A',color:'#FDF5E8',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto' }}>{bks.length}</div>}
-                      </td>
-                    )
-                  })}
-                  <td style={{ padding:'5px 6px', borderBottom:'1px solid var(--border)', textAlign:'center', position:'sticky', right:0, background:'var(--accent-light)' }}>
-                    <Badge color="wood">{bookings.filter(b=>{const[y,m2]=(b.dateKey||'').split('-');return parseInt(y)===year&&parseInt(m2)-1===month}).length}件</Badge>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {/* 日付セル */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
+            {Array.from({ length: getDay(new Date(year,month,1)) }, (_,i) => <div key={`e${i}`}/>)}
+            {allDays.map(d => {
+              const dw = getDay(new Date(year,month,d+1))
+              const workingStaff = staff.filter(s => monthShifts[s.id]?.[d])
+              const bks = getBookingsForDay(d)
+              const isSel = selectedDay===d
+              const isToday = new Date().getFullYear()===year && new Date().getMonth()===month && new Date().getDate()===d+1
+              const isWeekend = dw===0||dw===6
+              const staffColors = ['#7B5E3A','#4A7C59','#2E5F9A','#8B4A6B','#C17F3A','#3A7B8C','#7B3A5A']
 
-          {(viewMode==='both'||viewMode==='shift') && (
-            <div style={{ marginTop:10, borderTop:'2px solid var(--border)', paddingTop:8 }}>
-              <div style={{ fontSize:11, color:'var(--text3)', marginBottom:4, fontWeight:600 }}>日ごとの出勤人数</div>
-              <div style={{ display:'flex', gap:1, overflowX:'auto' }}>
-                {allDays.map(d => {
-                  const count = staff.filter(s => monthShifts[s.id]?.[d]).length
-                  const isSel = selectedDay===d
-                  return (
-                    <div key={d} onClick={() => setSelectedDay(selectedDay===d?null:d)} style={{
-                      minWidth:30, textAlign:'center', padding:'4px 2px', fontSize:11, fontWeight:700, cursor:'pointer', borderRadius:6,
-                      background: isSel?'var(--wood-gradient)':count===0?'var(--red-light)':count>=3?'var(--green-light)':'var(--amber-light)',
-                      color: isSel?'#FDF5E8':count===0?'var(--red-text)':count>=3?'var(--green-text)':'var(--amber-text)',
-                    }}>{count}</div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+              return (
+                <div key={d} onClick={() => setSelectedDay(isSel?null:d)} style={{
+                  minHeight: 72, borderRadius: 8, cursor:'pointer', padding:'5px 5px 4px',
+                  border: isSel ? '2px solid #7B5E3A' : isToday ? '2px solid var(--text)' : '1px solid var(--border)',
+                  background: isSel ? '#FDF5E0' : isWeekend ? (dw===0?'rgba(192,57,43,0.04)':'rgba(46,95,154,0.04)') : 'var(--surface)',
+                  display:'flex', flexDirection:'column', gap:2,
+                }}>
+                  {/* 日付数字 */}
+                  <div style={{
+                    fontSize:13, fontWeight: isToday?800:600, lineHeight:1,
+                    width:20, height:20, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                    background: isToday?'#7B5E3A':'transparent',
+                    color: isToday?'#FDF5E8':dw===0?'var(--red)':dw===6?'var(--accent-text)':'var(--text)',
+                  }}>{d+1}</div>
+
+                  {/* 出勤スタッフ名 */}
+                  {(viewMode==='both'||viewMode==='shift') && workingStaff.map((s,si) => (
+                    <div key={s.id} style={{
+                      fontSize:10, fontWeight:700, lineHeight:1.3,
+                      padding:'2px 4px', borderRadius:4,
+                      background: staffColors[staff.indexOf(s)%staffColors.length],
+                      color:'white', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                    }}>{s.name.split(' ')[0]}</div>
+                  ))}
+
+                  {/* 予約バッジ */}
+                  {(viewMode==='both'||viewMode==='booking') && bks.length>0 && (
+                    <div style={{
+                      marginTop:'auto', fontSize:10, fontWeight:700,
+                      color:'#7B5E3A', background:'var(--accent-light)',
+                      borderRadius:4, padding:'2px 4px', textAlign:'center',
+                    }}>予約{bks.length}件</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* 凡例 */}
+          <div style={{ display:'flex', gap:12, marginTop:10, fontSize:11, color:'var(--text3)', flexWrap:'wrap' }}>
+            <span>日付タップ → 詳細・編集</span>
+            {(viewMode==='both'||viewMode==='booking') && <span style={{ color:'#7B5E3A', fontWeight:600 }}>予約N件</span>}
+          </div>
         </Card>
 
         {selectedDay!==null && (
