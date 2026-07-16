@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useStore } from '../lib/store'
 import { Btn, Card, Badge, Metric, Avatar, Input, Notice, Divider, SectionTitle } from '../components/ui'
 import { getDaysInMonth, getDay } from 'date-fns'
@@ -182,6 +182,12 @@ function ShiftCalendar() {
   const [viewMode, setViewMode] = useState('both')
   const [selectedDay, setSelectedDay] = useState(null)
   const [screenshotMode, setScreenshotMode] = useState(false)
+
+  // 開いた時に今月にリセット
+  useEffect(() => {
+    const now = new Date()
+    setShiftMonth(now.getFullYear(), now.getMonth())
+  }, [])
 
   const changeMonth = (delta) => {
     let m = month+delta, y = year
