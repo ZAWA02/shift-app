@@ -47,13 +47,25 @@ export default function AdminPage() {
 // ---- ダッシュボード ----
 function Dashboard() {
   const { staff, wishes, bookings, shiftMonth, shifts, confirmedShifts } = useStore()
+  const now = new Date()
   const { year, month } = shiftMonth
   const mk = `${year}-${String(month+1).padStart(2,'0')}`
-  const monthWishes = wishes[mk] || {}
   const monthShifts = shifts[mk] || {}
+  const isConfirmed = !!confirmedShifts[mk]
+
+  // 希望提出状況は独自に月切り替えできる
+  const [wishYear, setWishYear] = useState(now.getFullYear())
+  const [wishMonth, setWishMonth] = useState(now.getMonth())
+  const changeWishMonth = (delta) => {
+    let m = wishMonth + delta, y = wishYear
+    if (m < 0) { m = 11; y-- }
+    if (m > 11) { m = 0; y++ }
+    setWishYear(y); setWishMonth(m)
+  }
+  const wishMk = `${wishYear}-${String(wishMonth+1).padStart(2,'0')}`
+  const monthWishes = wishes[wishMk] || {}
   const submitted = staff.filter(s => Object.keys(monthWishes[s.id]||{}).length>0).length
   const unsub = staff.length - submitted
-  const isConfirmed = !!confirmedShifts[mk]
   const now = new Date()
   const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const todayBookings = bookings.filter(b => b.dateKey===todayKey)
@@ -116,7 +128,14 @@ function Dashboard() {
       </Card>
 
       <Card style={{ marginBottom:16 }}>
-        <SectionTitle icon="📝" title="希望シフット提出状況" desc={`${year}年${month+1}月`} />
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:8 }}>
+          <SectionTitle icon="📝" title="希望シフット提出状況" desc="" style={{ marginBottom:0 }} />
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button onClick={() => changeWishMonth(-1)} style={{ padding:'4px 10px', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>‹</button>
+            <span style={{ fontSize:13, fontWeight:700, minWidth:70, textAlign:'center' }}>{wishYear}年{wishMonth+1}月</span>
+            <button onClick={() => changeWishMonth(1)} style={{ padding:'4px 10px', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>›</button>
+          </div>
+        </div>
         {staff.map((s,i) => {
           const w = monthWishes[s.id]||{}
           const okDays = Object.entries(w).filter(([,v])=>v==='ok').map(([d])=>parseInt(d)+1).sort((a,b)=>a-b)
