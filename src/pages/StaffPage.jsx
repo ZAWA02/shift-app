@@ -46,8 +46,11 @@ export default function StaffPage() {
   const [wishState, setWishState] = useState({})
   const [note, setNote] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [selYear, setSelYear] = useState(now.getFullYear())
-  const [selMonth, setSelMonth] = useState(now.getMonth())
+  // 希望シフトは来月分を入力するのがデフォルト
+  const nextMonth = now.getMonth() === 11 ? 0 : now.getMonth() + 1
+  const nextYear = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()
+  const [selYear, setSelYear] = useState(nextYear)
+  const [selMonth, setSelMonth] = useState(nextMonth)
   const [editPastMode, setEditPastMode] = useState(false)
 
   const mk = `${selYear}-${String(selMonth+1).padStart(2,'0')}`
