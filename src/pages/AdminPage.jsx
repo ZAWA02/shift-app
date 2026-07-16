@@ -66,7 +66,6 @@ function Dashboard() {
   const monthWishes = wishes[wishMk] || {}
   const submitted = staff.filter(s => Object.keys(monthWishes[s.id]||{}).length>0).length
   const unsub = staff.length - submitted
-  const now = new Date()
   const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const todayBookings = bookings.filter(b => b.dateKey===todayKey)
   const todayDayIdx = now.getDate()-1
